@@ -45,5 +45,11 @@ class WorkerHealthResponse(BaseModel):
     failed_job_count: int
 
 
+class SyntheticHealthResponse(BaseModel):
+    status: str
+    version: str
+    checks: dict[str, str]
+
+
 class IDResponse(BaseModel):
     id: str = Field(..., description="Resource identifier")

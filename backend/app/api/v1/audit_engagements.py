@@ -1735,6 +1735,16 @@ async def create_audit_export(
     except PermissionError as exc:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
+    from app.services.intelligence.integration_gates import IntegrationGateError, assert_audit_export_integrations
+
+    try:
+        assert_audit_export_integrations()
+    except IntegrationGateError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "blocked_integrations": exc.blocked},
+        ) from exc
+
     try:
         _zip_bytes, summary, signature = await build_audit_engagement_bundle(
             db,
@@ -1786,6 +1796,16 @@ async def download_audit_export(
     project = await load_project(row.project_id, user, db)
     if project is None or not await can_manage_project(user, project, db):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    from app.services.intelligence.integration_gates import IntegrationGateError, assert_audit_export_integrations
+
+    try:
+        assert_audit_export_integrations()
+    except IntegrationGateError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "blocked_integrations": exc.blocked},
+        ) from exc
 
     try:
         zip_bytes, summary, signature = await build_audit_engagement_bundle(

@@ -7,10 +7,12 @@ from fastapi import APIRouter, Depends, Query
 from app.api.v1.deps import DB, CurrentUser, require_satellite_feature
 from app.schemas.intelligence import (
     ExecutiveBriefOut,
+    IntegrationStripOut,
     IntegrationsHealthOut,
     IntelligenceSummaryOut,
     SatelliteFusionSummaryOut,
 )
+from app.services.intelligence.integration_gates import integration_gate_summary
 from app.services.intelligence.brief import build_executive_brief
 from app.services.intelligence.integrations import build_integrations_health
 from app.services.intelligence.satellite_fusion import build_portfolio_satellite_fusion
@@ -56,6 +58,12 @@ async def intelligence_summary(
 async def integrations_health(user: CurrentUser) -> IntegrationsHealthOut:
     """Status of external data providers (Open-Meteo, GBIF, Sentinel, Bhoonidhi, IUCN)."""
     return IntegrationsHealthOut.model_validate(await build_integrations_health())
+
+
+@router.get("/integrations/strip", response_model=IntegrationStripOut)
+async def integrations_strip(user: CurrentUser) -> IntegrationStripOut:
+    """Normalized live/stub/disabled modes for the global integration strip."""
+    return IntegrationStripOut.model_validate(integration_gate_summary())
 
 
 @router.get("/satellite-fusion", response_model=SatelliteFusionSummaryOut)

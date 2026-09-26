@@ -12,7 +12,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit import AuditLog
 from app.models.webhook import OrganizationWebhook, WebhookDelivery
+from app.services.monitoring.prometheus_metrics import observe_webhook_delivery
 from app.services.webhooks.events import audit_action_to_event
+from app.services.webhooks.retry import (
+    MAX_WEBHOOK_ATTEMPTS,
+    next_retry_at,
+    retry_delay_seconds,
+    schedule_webhook_delivery,
+)
 from app.services.webhooks.signer import dumps_payload, sign_payload
 
 
@@ -57,7 +64,7 @@ async def enqueue_webhook_event(
         db.add(delivery)
         await db.flush()
         delivery_ids.append(delivery.id)
-        _schedule_delivery(delivery.id)
+        schedule_webhook_delivery(delivery.id)
 
     return delivery_ids
 
@@ -84,25 +91,19 @@ async def enqueue_audit_webhooks(db: AsyncSession, entry: AuditLog) -> list[uuid
     )
 
 
-def _schedule_delivery(delivery_id: uuid.UUID) -> None:
-    try:
-        from app.workers.tasks import deliver_webhook
-
-        deliver_webhook.delay(str(delivery_id))
-    except Exception:
-        # Celery unavailable in dev/tests — delivery row remains pending.
-        pass
-
-
 async def deliver_webhook_once(db: AsyncSession, delivery_id: uuid.UUID) -> WebhookDelivery:
     delivery = await db.get(WebhookDelivery, delivery_id)
     if delivery is None:
         raise ValueError("delivery_not_found")
 
+    if delivery.status == "dead_letter":
+        return delivery
+
     webhook = await db.get(OrganizationWebhook, delivery.webhook_id)
     if webhook is None or not webhook.enabled:
         delivery.status = "failed"
         delivery.error_message = "webhook_disabled_or_missing"
+        observe_webhook_delivery("failed")
         return delivery
 
     body = dumps_payload(delivery.payload)
@@ -126,13 +127,29 @@ async def deliver_webhook_once(db: AsyncSession, delivery_id: uuid.UUID) -> Webh
             delivery.status = "delivered"
             delivery.delivered_at = datetime.now(UTC)
             delivery.error_message = None
-        else:
-            delivery.status = "failed"
-            delivery.error_message = f"http_{response.status_code}"
+            delivery.next_retry_at = None
+            observe_webhook_delivery("success")
+            return delivery
+        delivery.error_message = f"http_{response.status_code}"
     except Exception as exc:
-        delivery.status = "failed"
         delivery.error_message = _truncate(str(exc), 500)
 
+    return await _schedule_retry_or_dead_letter(delivery)
+
+
+async def _schedule_retry_or_dead_letter(delivery: WebhookDelivery) -> WebhookDelivery:
+    if delivery.attempt_count >= MAX_WEBHOOK_ATTEMPTS:
+        delivery.status = "dead_letter"
+        delivery.dead_lettered_at = datetime.now(UTC)
+        delivery.next_retry_at = None
+        observe_webhook_delivery("dead_letter")
+        return delivery
+
+    delay = retry_delay_seconds(delivery.attempt_count)
+    delivery.status = "retrying"
+    delivery.next_retry_at = next_retry_at(delivery.attempt_count)
+    observe_webhook_delivery("retry")
+    schedule_webhook_delivery(delivery.id, countdown=delay)
     return delivery
 
 

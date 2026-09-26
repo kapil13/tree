@@ -9,8 +9,11 @@ import httpx
 
 from app.core.config import settings
 from app.services.ai.service import ai_service_status
+from app.services.intelligence.integration_gates import integration_gate_summary
 from app.services.satellite.bhoonidhi_client import has_bhoonidhi_credentials
 from app.services.satellite.plantation import has_sentinel_credentials
+from app.services.monitoring.worker_health import build_bioacoustic_health
+from app.services.satellite.sar_service import has_sar_credentials
 from app.services.threats.firms_client import has_firms_credentials
 from app.services.threats.locust_feed import has_locust_feed, locust_feed_source
 
@@ -99,6 +102,57 @@ def _tree_satellite_status() -> dict[str, Any]:
     }
 
 
+def _sar_status() -> dict[str, Any]:
+    if not settings.sar_enabled:
+        return {
+            "status": "disabled",
+            "mode": "disabled",
+            "label": "SAR monitoring disabled in configuration",
+            "reachable": False,
+            "error": "feature_disabled",
+        }
+    configured = has_sar_credentials()
+    return {
+        "status": "configured" if configured else "not_configured",
+        "mode": "live" if configured else "estimate",
+        "label": (
+            "SAR monitoring credentials configured"
+            if configured
+            else "SAR uses stub provider until GEE or Sentinel Hub SAR is configured"
+        ),
+        "reachable": configured,
+        "error": None if configured else "missing_credentials",
+    }
+
+
+def _bioacoustic_status() -> dict[str, Any]:
+    bio = build_bioacoustic_health()
+    pipeline = bio.get("pipeline", "stub")
+    if pipeline == "stub":
+        return {
+            "status": "stub",
+            "mode": "stub",
+            "label": "Bioacoustic pipeline in stub mode",
+            "reachable": False,
+            "error": "stub_pipeline",
+        }
+    if bio.get("production_ready"):
+        return {
+            "status": "configured",
+            "mode": "live",
+            "label": f"Bioacoustic pipeline ready ({pipeline})",
+            "reachable": True,
+            "error": None,
+        }
+    return {
+        "status": "degraded",
+        "mode": "stub",
+        "label": "Bioacoustic ML dependencies missing on worker",
+        "reachable": False,
+        "error": "dependencies_missing",
+    }
+
+
 async def build_integrations_health(*, ping_remote: bool = True) -> dict[str, Any]:
     sentinel_configured = has_sentinel_credentials()
     bhoonidhi_configured = has_bhoonidhi_credentials()
@@ -174,6 +228,8 @@ async def build_integrations_health(*, ping_remote: bool = True) -> dict[str, An
             "error": None if has_locust_feed() else "missing_credentials",
             "source": locust_feed_source(),
         },
+        "sar_monitoring": _sar_status(),
+        "bioacoustic": _bioacoustic_status(),
     }
 
     degraded = ping_remote and any(
@@ -183,6 +239,7 @@ async def build_integrations_health(*, ping_remote: bool = True) -> dict[str, An
     return {
         "status": "degraded" if degraded else "ok",
         "integrations": integrations,
+        "strip": integration_gate_summary(),
     }
 
 

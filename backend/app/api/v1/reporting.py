@@ -54,6 +54,19 @@ async def export_framework_report(
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
 
+    from app.services.intelligence.integration_gates import (
+        IntegrationGateError,
+        assert_compliance_export_integrations,
+    )
+
+    try:
+        assert_compliance_export_integrations()
+    except IntegrationGateError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "blocked_integrations": exc.blocked},
+        ) from exc
+
     try:
         ctx = await build_framework_report_context(db, project, profile)
     except ValueError as exc:

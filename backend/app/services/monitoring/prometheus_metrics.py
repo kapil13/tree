@@ -64,6 +64,12 @@ MONITORING_DATA_FRESHNESS_STALE = Counter(
     labelnames=("signal",),
 )
 
+WEBHOOK_DELIVERIES = Counter(
+    "webhook_deliveries_total",
+    "Organization webhook delivery outcomes",
+    labelnames=("outcome",),
+)
+
 def observe_threat_watch_cache(cache_hit: bool) -> None:
     MONITORING_THREAT_WATCH_REQUESTS.labels(
         cache_result="hit" if cache_hit else "miss",
@@ -130,4 +136,7 @@ def track_threat_watch_duration() -> Iterator[None]:
     finally:
         MONITORING_THREAT_WATCH_DURATION.observe(time.perf_counter() - start)
 
+
+def observe_webhook_delivery(outcome: str) -> None:
+    WEBHOOK_DELIVERIES.labels(outcome=outcome).inc()
 

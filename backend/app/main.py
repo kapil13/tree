@@ -18,8 +18,10 @@ from app.api.v1.deps import DB, bearer_scheme
 from app.core.config import settings
 from app.core.health_checks import (
     collect_health,
+    collect_synthetic_health,
     health_http_status,
     require_health_detail_auth,
+    synthetic_health_http_status,
 )
 from app.core.http_errors import format_http_exception_detail
 from app.core.logging import configure_logging, get_logger
@@ -31,11 +33,36 @@ from app.schemas.common import (
     ErrorResponse,
     HealthResponse,
     LivenessResponse,
+    SyntheticHealthResponse,
     WorkerHealthResponse,
 )
 
 configure_logging()
 log = get_logger("byot.main")
+
+
+def _init_sentry() -> None:
+    dsn = (settings.sentry_dsn or "").strip()
+    if not dsn:
+        return
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.starlette import StarletteIntegration
+
+        sentry_sdk.init(
+            dsn=dsn,
+            environment=settings.app_env,
+            release=__version__,
+            traces_sample_rate=settings.sentry_traces_sample_rate,
+            integrations=[StarletteIntegration(), FastApiIntegration()],
+        )
+        log.info("sentry_initialized")
+    except Exception as exc:
+        log.warning("sentry_init_failed", error=str(exc))
+
+
+_init_sentry()
 
 
 @asynccontextmanager
@@ -161,6 +188,14 @@ async def health_live() -> LivenessResponse:
 async def health(db: DB, response: Response) -> HealthResponse:
     health_status = await collect_health(db)
     response.status_code = health_http_status(health_status)
+    return health_status
+
+
+@app.get("/health/synthetic", response_model=SyntheticHealthResponse, tags=["meta"])
+async def health_synthetic(db: DB, response: Response) -> SyntheticHealthResponse:
+    """Synthetic uptime probe — DB, Redis, Celery, and integration export gates."""
+    health_status = await collect_synthetic_health(db)
+    response.status_code = synthetic_health_http_status(health_status)
     return health_status
 
 
