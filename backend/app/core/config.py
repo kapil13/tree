@@ -97,6 +97,11 @@ class Settings(BaseSettings):
     expose_metrics: bool | None = None
     # Expose /docs /redoc /openapi.json (default off in staging/production)
     expose_api_docs: bool | None = None
+    # Platform Foundation E2 — PostgreSQL RLS (test env bypasses via admin role).
+    rls_enabled: bool = True
+    # Platform Foundation E3 — global per-user API rate limit (1000 / 15 min default).
+    global_rate_limit_max_requests: int = Field(default=1000, ge=1)
+    global_rate_limit_window_seconds: int = Field(default=900, ge=60)
     # Email OTP — Resend (login, signup, password reset)
     auth_otp_email_enabled: bool = False
     # Resend transactional email (https://resend.com)

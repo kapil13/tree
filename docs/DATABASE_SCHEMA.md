@@ -350,5 +350,7 @@ CREATE POLICY trees_tenant_isolation
   );
 ```
 
-The API sets `SET LOCAL byot.current_org_id` per request inside the
-SQLAlchemy session checkout hook (see `core/database.py`).
+Implemented in Alembic migration `0087_platform_rls_policies`. The API sets
+`SET LOCAL byot.current_org_id`, `byot.current_user_id`, and `byot.current_role`
+per request via `app/core/rls.py` (called from `get_db` and `get_current_user`).
+Celery workers use `CELERY_WORKER=1` for the `service` bypass role.

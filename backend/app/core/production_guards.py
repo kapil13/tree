@@ -42,6 +42,16 @@ def validate_runtime_settings() -> None:
     if settings.app_env == "production" and settings.app_debug:
         raise RuntimeError("APP_DEBUG must be false when APP_ENV=production.")
 
+    if settings.app_env == "production" and settings.api_docs_exposed:
+        raise RuntimeError(
+            "EXPOSE_API_DOCS must be false in production (set EXPOSE_API_DOCS=false)."
+        )
+
+    if settings.app_env == "production" and settings.metrics_exposed:
+        raise RuntimeError(
+            "EXPOSE_METRICS must be false in production (set EXPOSE_METRICS=false)."
+        )
+
     if settings.auth_allow_dev_otp is True:
         raise RuntimeError(
             "AUTH_ALLOW_DEV_OTP cannot be true in production/staging. "

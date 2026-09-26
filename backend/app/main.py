@@ -24,6 +24,8 @@ from app.core.health_checks import (
 from app.core.http_errors import format_http_exception_detail
 from app.core.logging import configure_logging, get_logger
 from app.core.production_guards import validate_runtime_settings
+from app.middleware.trace_id import TraceIdMiddleware
+from app.middleware.user_rate_limit import UserRateLimitMiddleware
 from app.schemas.common import (
     ErrorBody,
     ErrorResponse,
@@ -90,6 +92,7 @@ class XRobotsTagMiddleware:
         await self.app(scope, receive, send_with_robots)
 
 
+app.add_middleware(UserRateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -97,7 +100,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Outermost: header is present on success, errors, and /robots.txt.
+# Outermost: trace id + robots tag on every response.
+app.add_middleware(TraceIdMiddleware)
 app.add_middleware(XRobotsTagMiddleware)
 
 if settings.metrics_exposed:
@@ -111,20 +115,30 @@ else:
 # ---------------------------------------------------------------------------
 
 
-def _err(code: str, message: str, status_code: int, details=None) -> JSONResponse:
-    body = ErrorResponse(error=ErrorBody(code=code, message=message, details=details))
+def _err(
+    request: Request,
+    code: str,
+    message: str,
+    status_code: int,
+    details=None,
+) -> JSONResponse:
+    trace_id = getattr(request.state, "trace_id", None)
+    body = ErrorResponse(
+        error=ErrorBody(code=code, message=message, details=details, trace_id=trace_id)
+    )
     return JSONResponse(status_code=status_code, content=body.model_dump(mode="json"))
 
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exc(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     code, msg, details = format_http_exception_detail(exc.detail)
-    return _err(code, msg, exc.status_code, details)
+    return _err(request, code, msg, exc.status_code, details)
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exc(request: Request, exc: RequestValidationError) -> JSONResponse:
     return _err(
+        request,
         "validation_error",
         "Request validation failed",
         status.HTTP_422_UNPROCESSABLE_ENTITY,

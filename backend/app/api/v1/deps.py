@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.rbac_policy import professional_roles
+from app.core.rls import apply_rls_to_session, set_rls_from_user
 from app.core.security import (
     Permission,
     TokenType,
@@ -67,6 +68,8 @@ async def get_current_user(
         if org is not None and not org.is_active:
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail="organization_suspended")
     request.state.impersonation_read_only = payload.get("imp_ro") is True
+    set_rls_from_user(user)
+    await apply_rls_to_session(db)
     return user
 
 

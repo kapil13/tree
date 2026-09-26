@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.v1.deps import DB, CurrentUser, OrgAdmin, WriteAccess, WriteProfessional
+from app.core.rate_limit import rate_limit
 from app.core.security import Permission, has_permission
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
@@ -394,7 +395,10 @@ async def backfill_integrity_fusion_projects(
     return result
 
 
-@router.post("/{project_id}/satellite-scan")
+@router.post(
+    "/{project_id}/satellite-scan",
+    dependencies=[rate_limit(12, 3600)],
+)
 async def trigger_project_satellite_scan(
     project_id: uuid.UUID,
     user: WriteProfessional,
@@ -1348,7 +1352,7 @@ async def project_survival_due(
     return await survival_due_summary(db, project=project)
 
 
-@router.get("/{project_id}/mrv-export")
+@router.get("/{project_id}/mrv-export", dependencies=[rate_limit(20, 3600)])
 async def export_project_mrv(
     project_id: uuid.UUID,
     request: Request,
@@ -1395,7 +1399,7 @@ async def export_project_mrv(
     )
 
 
-@router.get("/{project_id}/evidence-bundle")
+@router.get("/{project_id}/evidence-bundle", dependencies=[rate_limit(10, 3600)])
 async def export_evidence_bundle(
     project_id: uuid.UUID,
     request: Request,

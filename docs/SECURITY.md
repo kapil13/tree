@@ -19,7 +19,7 @@ This document describes **what the codebase actually implements today** on the H
 * **JWT**: HS256 signed with `JWT_SECRET`; access + refresh tokens; denylist via Redis.
 * **Session cookie**: HttpOnly `byot_session` for Next.js middleware (signed with `SESSION_COOKIE_SECRET`).
 * **AuthZ — RBAC**: roles (`user`, `farmer`, `ngo`, `corporate`, `government`, `admin`, …) with `Permission` enum checks on sensitive routes.
-* **Tenant isolation**: queries filtered by `organization_id` in services/repositories — **not** PostgreSQL RLS.
+* **Tenant isolation**: application-layer `organization_id` scoping **plus** PostgreSQL RLS on `trees`, `planting_projects`, `organization_webhooks`, `webhook_deliveries`, `payment_orders`, `audit_logs`, and `audit_engagements` (migration `0087`, session GUCs in `app/core/rls.py`).
 * **Org feature flags**: per-organization toggles for `ai_scan`, `satellite`, `bioacoustic`, `reports`, `payments` enforced on API routes and reflected in frontend nav.
 
 ## 3. Data protection
@@ -31,7 +31,8 @@ This document describes **what the codebase actually implements today** on the H
 
 ## 4. API hardening
 
-* Rate limits (Redis): applied on `/auth/*` and OTP routes; production returns 503 if Redis is unavailable.
+* Rate limits (Redis): global **1000 req / 15 min** per user on `/api/v1/*` (middleware), plus per-route limits on `/auth/*`, satellite scans, exports, and report generation; production returns 503 if Redis is unavailable.
+* Error responses include `trace_id` (also sent as `X-Trace-Id` header).
 * Input validation: Pydantic v2 on all request bodies.
 * CORS: explicit allow-list via `CORS_ORIGINS`.
 * File uploads: presigned PUT to MinIO; size/MIME checks in upload services.

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
+from app.core.rls import apply_rls_to_session
 
 
 class Base(DeclarativeBase):
@@ -33,6 +34,7 @@ AsyncSessionLocal = async_sessionmaker(
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency yielding an async DB session."""
     async with AsyncSessionLocal() as session:
+        await apply_rls_to_session(session)
         try:
             yield session
         except Exception:
