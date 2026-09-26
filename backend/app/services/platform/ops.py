@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from collections import Counter
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
@@ -14,6 +15,7 @@ from app.models.organization import Organization
 from app.models.payment import PaymentEvent
 from app.models.webhook import OrganizationWebhook, WebhookDelivery
 from app.services.intelligence.integrations import build_integrations_health
+from app.services.messaging.delivery_tracking import build_messaging_delivery_stats
 from app.services.monitoring.job_runs import get_recent_job_runs
 from app.services.monitoring.worker_health import build_worker_health
 from app.services.webhooks.dispatcher import deliver_webhook_once
@@ -33,9 +35,41 @@ RETRYABLE_JOBS: dict[str, str] = {
 }
 
 
+async def build_webhook_delivery_stats(
+    db: AsyncSession,
+    *,
+    window_hours: int = 24,
+) -> dict[str, Any]:
+    since = datetime.now(UTC) - timedelta(hours=window_hours)
+    rows = (
+        await db.execute(
+            select(WebhookDelivery.status, func.count())
+            .where(WebhookDelivery.created_at >= since)
+            .group_by(WebhookDelivery.status)
+        )
+    ).all()
+    by_status = {status: int(count) for status, count in rows}
+    delivered = by_status.get("delivered", 0)
+    terminal = delivered + by_status.get("dead_letter", 0) + by_status.get("failed", 0)
+    success_rate = round((delivered / terminal) * 100, 1) if terminal else None
+    alert = success_rate is not None and terminal >= 5 and success_rate < 90.0
+    return {
+        "window_hours": window_hours,
+        "by_status": by_status,
+        "delivered": delivered,
+        "dead_letter": by_status.get("dead_letter", 0),
+        "retrying": by_status.get("retrying", 0),
+        "failed": by_status.get("failed", 0),
+        "success_rate_pct": success_rate,
+        "alert_low_success_rate": alert,
+    }
+
+
 async def build_ops_summary(db: AsyncSession) -> dict[str, Any]:
     workers = await build_worker_health(db)
     integrations = await build_integrations_health(ping_remote=False)
+    webhook_stats = await build_webhook_delivery_stats(db)
+    messaging_stats = await build_messaging_delivery_stats(db)
     recent_jobs = await get_recent_job_runs(db, limit=25)
     status_counts = Counter(j.get("status") for j in recent_jobs)
     job_name_counts = Counter(j.get("job_name") for j in recent_jobs)
@@ -46,6 +80,8 @@ async def build_ops_summary(db: AsyncSession) -> dict[str, Any]:
     overall = "ok"
     if workers.get("status") != "ok" or integrations.get("status") not in {"ok", "degraded"}:
         overall = "degraded"
+    if webhook_stats.get("alert_low_success_rate"):
+        overall = "degraded"
     if workers.get("status") == "degraded" and integrations.get("status") == "error":
         overall = "error"
 
@@ -53,6 +89,8 @@ async def build_ops_summary(db: AsyncSession) -> dict[str, Any]:
         "status": overall,
         "workers": workers,
         "integrations": integrations,
+        "webhooks": webhook_stats,
+        "messaging": messaging_stats,
         "jobs": {
             "total_recorded": total_runs,
             "recent_count": len(recent_jobs),
@@ -78,7 +116,7 @@ async def query_failed_webhook_deliveries(
             select(WebhookDelivery, OrganizationWebhook, Organization.name)
             .join(OrganizationWebhook, OrganizationWebhook.id == WebhookDelivery.webhook_id)
             .join(Organization, Organization.id == OrganizationWebhook.organization_id)
-            .where(WebhookDelivery.status == "failed")
+            .where(WebhookDelivery.status.in_(("failed", "dead_letter", "retrying")))
             .order_by(WebhookDelivery.created_at.desc())
             .limit(limit)
         )
@@ -91,6 +129,8 @@ async def query_failed_webhook_deliveries(
             "attempt_count": delivery.attempt_count,
             "error_message": delivery.error_message,
             "response_status": delivery.response_status,
+            "next_retry_at": delivery.next_retry_at,
+            "dead_lettered_at": delivery.dead_lettered_at,
             "created_at": delivery.created_at,
             "webhook_id": webhook.id,
             "webhook_label": webhook.label,

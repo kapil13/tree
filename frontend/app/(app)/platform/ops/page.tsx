@@ -367,6 +367,97 @@ export default function PlatformOpsPage() {
 
             {tab === "webhooks" ? (
               <div className="space-y-6">
+                {data.webhooks ? (
+                  <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Webhook className="h-5 w-5 text-forest-700" />
+                        <h2 className="text-lg font-semibold">Webhook delivery health</h2>
+                      </div>
+                      {data.webhooks.alert_low_success_rate ? (
+                        <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
+                          Low success rate
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                      <HealthCard
+                        label="Success rate"
+                        status={
+                          data.webhooks.success_rate_pct == null
+                            ? "unknown"
+                            : data.webhooks.success_rate_pct >= 90
+                              ? "ok"
+                              : "degraded"
+                        }
+                        hint={
+                          data.webhooks.success_rate_pct == null
+                            ? "No deliveries in window"
+                            : `${data.webhooks.success_rate_pct}% (${data.webhooks.window_hours}h)`
+                        }
+                      />
+                      <HealthCard
+                        label="Delivered"
+                        status="ok"
+                        hint={String(data.webhooks.delivered)}
+                      />
+                      <HealthCard
+                        label="Retrying"
+                        status={data.webhooks.retrying > 0 ? "degraded" : "ok"}
+                        hint={String(data.webhooks.retrying)}
+                      />
+                      <HealthCard
+                        label="Dead letter"
+                        status={data.webhooks.dead_letter > 0 ? "error" : "ok"}
+                        hint={String(data.webhooks.dead_letter)}
+                      />
+                      <HealthCard
+                        label="Failed"
+                        status={data.webhooks.failed > 0 ? "degraded" : "ok"}
+                        hint={String(data.webhooks.failed)}
+                      />
+                    </div>
+                  </section>
+                ) : null}
+
+                {data.messaging ? (
+                  <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
+                    <h2 className="text-lg font-semibold">OTP & messaging delivery</h2>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <HealthCard
+                        label="OTP sent"
+                        status="ok"
+                        hint={String(data.messaging.otp_sent)}
+                      />
+                      <HealthCard
+                        label="OTP verified"
+                        status="ok"
+                        hint={String(data.messaging.otp_verified)}
+                      />
+                      <HealthCard
+                        label="OTP success rate"
+                        status={
+                          data.messaging.otp_success_rate_pct == null
+                            ? "unknown"
+                            : data.messaging.otp_success_rate_pct >= 70
+                              ? "ok"
+                              : "degraded"
+                        }
+                        hint={
+                          data.messaging.otp_success_rate_pct == null
+                            ? "No OTP traffic"
+                            : `${data.messaging.otp_success_rate_pct}%`
+                        }
+                      />
+                      <HealthCard
+                        label="Suppressed recipients"
+                        status={data.messaging.suppressed_recipients > 0 ? "degraded" : "ok"}
+                        hint={String(data.messaging.suppressed_recipients)}
+                      />
+                    </div>
+                  </section>
+                ) : null}
+
                 <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
                   <div className="mb-4 flex items-center gap-2">
                     <Webhook className="h-5 w-5 text-forest-700" />
@@ -382,6 +473,7 @@ export default function PlatformOpsPage() {
                             <th className="px-2 py-2 font-medium">{t("tableOrganization")}</th>
                             <th className="px-2 py-2 font-medium">{t("tableEndpoint")}</th>
                             <th className="px-2 py-2 font-medium">{t("tableEvent")}</th>
+                            <th className="px-2 py-2 font-medium">{tc("status")}</th>
                             <th className="px-2 py-2 font-medium">{t("tableAttempts")}</th>
                             <th className="px-2 py-2 font-medium">{t("tableError")}</th>
                             <th className="px-2 py-2 font-medium" />
@@ -395,6 +487,9 @@ export default function PlatformOpsPage() {
                                 {w.webhook_url}
                               </td>
                               <td className="px-2 py-2">{w.event_type}</td>
+                              <td className="px-2 py-2">
+                                <IntegrationStatus status={w.status} />
+                              </td>
                               <td className="px-2 py-2">{w.attempt_count}</td>
                               <td className="max-w-xs truncate px-2 py-2 text-xs text-red-600">
                                 {w.error_message || "—"}

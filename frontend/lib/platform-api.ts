@@ -164,6 +164,24 @@ export type PlatformOpsSummary = {
     failed_job_count: number;
   };
   integrations: { status: string; integrations: Record<string, { status: string; label?: string }> };
+  webhooks?: {
+    window_hours: number;
+    by_status: Record<string, number>;
+    delivered: number;
+    dead_letter: number;
+    retrying: number;
+    failed: number;
+    success_rate_pct: number | null;
+    alert_low_success_rate: boolean;
+  };
+  messaging?: {
+    window_hours: number;
+    otp_sent: number;
+    otp_verified: number;
+    otp_success_rate_pct: number | null;
+    suppressed_recipients: number;
+    by_channel: Record<string, Record<string, number>>;
+  };
   jobs: {
     total_recorded: number;
     recent_count: number;

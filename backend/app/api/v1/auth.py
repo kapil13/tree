@@ -464,7 +464,7 @@ async def signup_complete(payload: SignupCompleteRequest, request: Request, db: 
 
 
 @router.post("/otp/request", response_model=OTPRequestOut, dependencies=[rate_limit(10, 60)])
-async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
+async def request_otp(payload: OTPRequest, request: Request, db: DB) -> OTPRequestOut:
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request), request=request)
     if not payload.email and not payload.phone:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_or_phone")
@@ -487,12 +487,27 @@ async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
     ):
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="email_otp_not_configured")
 
+    from app.services.messaging.delivery_tracking import is_suppressed, record_message_delivery
+
+    channel = "sms" if phone else "email"
+    if await is_suppressed(db, channel=channel, recipient=identifier):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="recipient_suppressed")
+
     code = await issue_otp(purpose, identifier)
 
     if phone:
         if sms_auth_configured():
             try:
                 await send_auth_otp_sms(phone=phone, code=code)
+                await record_message_delivery(
+                    db,
+                    channel="sms",
+                    provider="msg91",
+                    recipient=identifier,
+                    status="sent",
+                    template_key=purpose,
+                )
+                await db.commit()
             except SmsSendError as exc:
                 if not settings.allow_dev_otp:
                     raise HTTPException(
@@ -517,6 +532,15 @@ async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
     if ses_otp_configured():
         try:
             await send_auth_otp_email(to=identifier, code=code)
+            await record_message_delivery(
+                db,
+                channel="email",
+                provider="resend",
+                recipient=identifier,
+                status="sent",
+                template_key=purpose,
+            )
+            await db.commit()
             return OTPRequestOut(
                 status="sent",
                 dev_hint=None,
@@ -588,6 +612,17 @@ async def verify_otp(payload: OTPVerify, request: Request, db: DB) -> TokenRespo
 
     if not await check_otp(purpose, identifier, payload.code):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
+
+    from app.services.messaging.delivery_tracking import record_message_delivery
+
+    await record_message_delivery(
+        db,
+        channel="sms" if payload.phone else "email",
+        provider="msg91" if payload.phone else "resend",
+        recipient=identifier,
+        status="verified",
+        template_key=purpose,
+    )
 
     user = await _user_from_otp(db, payload)
     await assert_user_may_authenticate(db, user)

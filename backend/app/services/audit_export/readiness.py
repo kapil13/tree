@@ -142,8 +142,27 @@ async def export_readiness(
             }
         )
 
+    from app.services.intelligence.integration_gates import integration_gate_summary
+
+    integration_gate = integration_gate_summary()
+    integration_section = {
+        "id": "integrations",
+        "label": "Live data integrations",
+        "met": integration_gate.get("audit_export_ready", False),
+        "detail": None
+        if integration_gate.get("audit_export_ready")
+        else "Optical NDVI and SAR must be live before audit export",
+        "blocked": [
+            item
+            for item in integration_gate.get("integrations", [])
+            if item.get("mode") != "live"
+            and item.get("key") in {"optical_ndvi", "sar"}
+        ],
+    }
+    sections.append(integration_section)
+
     ready = all(s["met"] for s in sections)
-    exportable = engagement.status in {"field_verified", "export_ready"}
+    exportable = engagement.status in {"field_verified", "export_ready"} and integration_section["met"]
 
     return {
         "engagement_id": str(engagement.id),
@@ -158,4 +177,5 @@ async def export_readiness(
         "reconciliation_aligned_count": reconciliation_aligned,
         "reconciliation_mismatch_count": reconciliation_mismatch,
         "reconciliation_no_field_count": reconciliation_no_field,
+        "integration_gate": integration_gate,
     }

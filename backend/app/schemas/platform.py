@@ -208,6 +208,8 @@ class WebhookDeliveryAdminOut(BaseModel):
     attempt_count: int
     error_message: str | None = None
     response_status: int | None = None
+    next_retry_at: datetime | None = None
+    dead_lettered_at: datetime | None = None
     created_at: datetime
     webhook_id: uuid.UUID
     webhook_label: str
@@ -248,6 +250,8 @@ class PlatformOpsSummaryOut(BaseModel):
     status: str
     workers: dict
     integrations: dict
+    webhooks: dict = Field(default_factory=dict)
+    messaging: dict = Field(default_factory=dict)
     jobs: dict
 
 

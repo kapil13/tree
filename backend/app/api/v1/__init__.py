@@ -37,6 +37,7 @@ from app.api.v1 import (
     privacy,
     reporting,
     reports,
+    resend_webhooks,
     sar,
     satellite,
     satellite_health,
@@ -95,6 +96,7 @@ api_router.include_router(reports.router)
 api_router.include_router(reporting.router)
 api_router.include_router(ogc.router)
 api_router.include_router(webhooks.router)
+api_router.include_router(resend_webhooks.router)
 api_router.include_router(verification.router)
 api_router.include_router(verification.public_router)
 api_router.include_router(verification_workflow.router)

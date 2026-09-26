@@ -63,6 +63,7 @@ from app.models.emission_source import (
     EmissionSatelliteScan,
     EmissionSource,
 )
+from app.models.messaging_delivery import MessageDeliveryReceipt, SuppressedRecipient
 from app.models.monitoring_job_run import MonitoringJobRun
 from app.models.monitoring_scan_target import MonitoringScanTarget
 from app.models.organization import Organization
@@ -227,8 +228,10 @@ __all__ = [
     "ProjectMember",
     "ProjectSafeguardDocument",
     "ProjectRiskAssessment",
+    "MessageDeliveryReceipt",
     "MonitoringJobRun",
     "MonitoringScanTarget",
+    "SuppressedRecipient",
     "VerificationItem",
     "VerificationSample",
     "PlotMonitoringDesign",
