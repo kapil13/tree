@@ -27,6 +27,8 @@ ChecklistCode = Literal[
     "estate_monitoring",
     "mining_reclamation",
     "nutri_garden",
+    "township_landscape",
+    "agroforestry_farm",
 ]
 
 ChecklistAnswer = Literal["yes", "no", "partial", "na"]
@@ -1155,6 +1157,118 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 category="Compliance",
                 question="Are blocking compliance violations resolved?",
                 guidance="Open blocking issues should be cleared before IBM or state mining submission.",
+                auto_key="no_block_violations",
+            ),
+        ),
+    ),
+    "township_landscape": ComplianceChecklist(
+        code="township_landscape",
+        title="Township & Society Landscape Readiness",
+        short_label="Township landscape",
+        framework_reference="RWA / campus greening — avenue and common-area planting",
+        description=(
+            "Readiness for housing society, township, and campus landscape projects with "
+            "RWA governance, layout plans, and avenue spacing compliance."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="rwa_registration",
+                category="Governance",
+                question="Is the RWA / society registration reference recorded?",
+                guidance="Society or township RWA registration supports maintenance accountability.",
+                auto_key="township_rwa_documented",
+            ),
+            ChecklistItemDef(
+                id="layout_plan",
+                category="Boundary",
+                question="Is the approved landscape layout or avenue plan on file?",
+                guidance="Layout plan should match mapped work-area polygons and avenue blocks.",
+                auto_key="township_layout_documented",
+            ),
+            ChecklistItemDef(
+                id="work_areas_mapped",
+                category="Boundary",
+                question="Are common areas and avenue corridors drawn as work areas?",
+                guidance="Map internal roads, medians, and pocket parks before field registration.",
+                auto_key="has_work_areas",
+            ),
+            ChecklistItemDef(
+                id="trees_registered",
+                category="Operations",
+                question="Are trees registered with GPS and photos on the layout?",
+                guidance="Avenue and pocket-park trees should be geotagged for survival audits.",
+                auto_key="has_trees",
+            ),
+            *_COMMON_MONITORING,
+            ChecklistItemDef(
+                id="no_blocking_violations",
+                category="Compliance",
+                question="Are spacing and guard violations resolved?",
+                guidance="Fix pit size, spacing, and guard issues before handover to RWA maintenance.",
+                auto_key="no_block_violations",
+            ),
+        ),
+    ),
+    "agroforestry_farm": ComplianceChecklist(
+        code="agroforestry_farm",
+        title="Agroforestry & Farm Forestry Readiness",
+        short_label="Agroforestry",
+        framework_reference="Farm forestry / MGNREGA convergence on farmer land",
+        description=(
+            "Readiness for farm-boundary strips, silvopasture, and horticulture-forestry "
+            "plots with farmer beneficiary records, land tenure, and FRA safeguards."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="farmer_beneficiary",
+                category="Governance",
+                question="Is the farmer beneficiary or SHG reference documented?",
+                guidance="Beneficiary ID links plantation wages and survival accountability.",
+                auto_key="farmer_beneficiary_documented",
+            ),
+            ChecklistItemDef(
+                id="land_record_ref",
+                category="Tenure",
+                question="Is revenue / patta / lease land record reference on file?",
+                guidance="Land record or gram sabha consent supports tenure defensibility.",
+                auto_key="land_record_documented",
+            ),
+            ChecklistItemDef(
+                id="plot_type",
+                category="Boundary",
+                question="Is the agroforestry plot type (strip, boundary, silvopasture) recorded?",
+                guidance="Plot type drives stocking density and species mix rules.",
+                auto_key="agroforestry_plot_documented",
+            ),
+            ChecklistItemDef(
+                id="gram_sabha_resolution",
+                category="Safeguards",
+                question="Is gram sabha resolution or FPIC on file for community land?",
+                guidance="Required when planting on panchayat or CFR-adjacent parcels.",
+                auto_key="safeguards_gram_sabha",
+            ),
+            ChecklistItemDef(
+                id="work_areas_mapped",
+                category="Boundary",
+                question="Are farm strips and plot boundaries mapped?",
+                guidance="Draw farm-forestry polygons before registering trees.",
+                auto_key="has_work_areas",
+            ),
+            ChecklistItemDef(
+                id="native_stocking",
+                category="Eligibility",
+                question="Does species mix meet native / fruit-tree targets?",
+                guidance="Agroforestry strips typically target 60–80% native or approved fruit species.",
+                auto_key="native_species_tracked",
+            ),
+            *_COMMON_MONITORING,
+            ChecklistItemDef(
+                id="no_blocking_violations",
+                category="Compliance",
+                question="Are blocking compliance violations resolved?",
+                guidance="Resolve boundary and species issues before MGNREGA or state audits.",
                 auto_key="no_block_violations",
             ),
         ),

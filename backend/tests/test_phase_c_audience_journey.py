@@ -67,3 +67,29 @@ async def test_resolve_audience_context_returns_highlights(monkeypatch):
     assert context["preset"]["code"] == "mining"
     assert "greenbelt" in context["dashboard_highlights"]
     assert context["default_project"]["scheme_code"] == "mining_reclamation"
+    assert context["fra_required"] is False
+    assert isinstance(context["journey_steps"], list)
+
+
+@pytest.mark.asyncio
+async def test_resolve_audience_context_ngo_fra_and_schemes(monkeypatch):
+    user = MagicMock(id=uuid.uuid4(), organization_id=uuid.uuid4())
+    db = MagicMock()
+
+    monkeypatch.setattr(
+        "app.services.onboarding.audience_journey.get_user_planting_audience",
+        AsyncMock(return_value="ngo_community"),
+    )
+    monkeypatch.setattr(
+        "app.services.onboarding.audience_journey.list_user_program_codes",
+        AsyncMock(return_value=["ngo_community"]),
+    )
+
+    context = await resolve_audience_context(db, user)
+
+    assert context["audience"] == "ngo_community"
+    assert context["fra_required"] is True
+    assert context["default_project"]["scheme_code"] == "agroforestry_farm"
+    codes = {row["code"] for row in context["scheme_recommendations"]}
+    assert "agroforestry_farm" in codes
+    assert any(step["id"] == "fra_safeguards" for step in context["journey_steps"])

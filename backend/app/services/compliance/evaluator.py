@@ -527,6 +527,17 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     else:
         signals["site_area_match"] = "na"
 
+    signals["township_rwa_documented"] = "yes" if refs.get("rwa_registration_id") else "no"
+    signals["township_layout_documented"] = "yes" if refs.get("layout_plan_ref") else "no"
+    signals["farmer_beneficiary_documented"] = "yes" if refs.get("farmer_beneficiary_id") else "no"
+    signals["land_record_documented"] = "yes" if refs.get("land_record_ref") else "no"
+    signals["agroforestry_plot_documented"] = (
+        "yes" if refs.get("agroforestry_plot_type") else "no"
+    )
+    signals["miyawaki_site_documented"] = "yes" if refs.get("miyawaki_site_id") else "no"
+    signals["ulb_documented"] = "yes" if refs.get("ulb_name") else "no"
+    signals["village_forest_committee_documented"] = "yes" if refs.get("vfc_name") else "no"
+
     scheme_code = getattr(project, "scheme_code", None)
     if scheme_code == "mining_reclamation":
         from app.services.planting_projects.closure_milestones import (

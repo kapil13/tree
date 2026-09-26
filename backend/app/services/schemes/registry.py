@@ -265,6 +265,92 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "active": True,
         "metadata_sections": [],
     },
+    "township_landscape": {
+        "code": "township_landscape",
+        "label": "Township & Society Landscape",
+        "description": (
+            "Large township, housing society, and campus avenue planting with RWA "
+            "governance, common-area polygons, and maintenance handover."
+        ),
+        "ministry": "Housing / RWA",
+        "group": "corporate",
+        "program_codes": ["corporate_esg", "government_nhai"],
+        "default_segment": "township_landscape",
+        "default_compliance_mode": "guided",
+        "default_template_code": "township_landscape_v1",
+        "checklist_codes": ["township_landscape", "esg_general"],
+        "framework_profiles": ["esg_general"],
+        "convergence_allowed": ["nagar_van", "green_credit_india"],
+        "legacy_plantation_category": "municipal",
+        "kpi_targets": {"survival_pct_min": 75.0, "geo_tagged_pct_min": 90.0},
+        "active": True,
+        "metadata_sections": [],
+    },
+    "agroforestry_farm": {
+        "code": "agroforestry_farm",
+        "label": "Agroforestry & Farm Forestry",
+        "description": (
+            "Farm-boundary strips, silvopasture, and horticulture-forestry on farmer "
+            "and community land — often converged with MGNREGA wage employment."
+        ),
+        "ministry": "Agriculture / Rural Development",
+        "group": "convergence",
+        "program_codes": ["ngo_community", "government_nhai"],
+        "default_segment": "ngo_watershed",
+        "default_compliance_mode": "guided",
+        "default_template_code": "agroforestry_farm_v1",
+        "checklist_codes": ["agroforestry_farm", "fra_tenure", "mgnrega_convergence"],
+        "framework_profiles": ["esg_general", "mgnrega"],
+        "convergence_allowed": ["mgnrega_convergence", "jal_shakti_riparian"],
+        "legacy_plantation_category": None,
+        "kpi_targets": {"survival_pct_min": 65.0, "geo_tagged_pct_min": 85.0},
+        "active": True,
+        "metadata_sections": [],
+    },
+    "mh_van_mahotsav": {
+        "code": "mh_van_mahotsav",
+        "label": "Van Mahotsav — Maharashtra Urban Greening",
+        "description": (
+            "Maharashtra state urban Miyawaki and Van Mahotsav blocks on ULB, school, "
+            "and panchayat land with dense native stocking targets."
+        ),
+        "ministry": "Maharashtra Forest & Urban Development",
+        "group": "state",
+        "program_codes": ["government_nhai", "ngo_community"],
+        "default_segment": "nagar_van_urban",
+        "default_compliance_mode": "guided",
+        "default_template_code": "mh_van_mahotsav_v1",
+        "checklist_codes": ["nagar_van_urban", "fra_tenure"],
+        "framework_profiles": ["nagar_van", "esg_general"],
+        "convergence_allowed": ["mgnrega_convergence"],
+        "legacy_plantation_category": "municipal",
+        "kpi_targets": {"survival_pct_min": 70.0, "geo_tagged_pct_min": 90.0, "min_trees": 400},
+        "active": True,
+        "state_codes": ["27"],
+        "metadata_sections": [],
+    },
+    "gj_social_forestry": {
+        "code": "gj_social_forestry",
+        "label": "Social Forestry — Gujarat Village Plots",
+        "description": (
+            "Gujarat social forestry village plots and community woodlots on panchayat "
+            "and degraded land with village forest committee governance."
+        ),
+        "ministry": "Gujarat Forest Department",
+        "group": "state",
+        "program_codes": ["government_nhai", "ngo_community"],
+        "default_segment": "general",
+        "default_compliance_mode": "guided",
+        "default_template_code": "gj_social_forestry_v1",
+        "checklist_codes": ["gim_general", "fra_tenure"],
+        "framework_profiles": ["gim", "esg_general"],
+        "convergence_allowed": ["mgnrega_convergence"],
+        "legacy_plantation_category": "other_government",
+        "kpi_targets": {"survival_pct_min": 70.0, "geo_tagged_pct_min": 88.0, "min_trees": 1000},
+        "active": True,
+        "state_codes": ["24"],
+        "metadata_sections": [],
+    },
     "raj_amrit_poshan_vatika": {
         "code": "raj_amrit_poshan_vatika",
         "label": "Amrit Poshan Vatika — Rajasthan Nutri-Garden",

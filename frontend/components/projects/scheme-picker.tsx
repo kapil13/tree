@@ -35,6 +35,10 @@ const SCHEME_ICONS: Record<string, LucideIcon> = {
   sahakar_van: Handshake,
   estate_monitoring: Satellite,
   raj_amrit_poshan_vatika: Sprout,
+  township_landscape: Building2,
+  agroforestry_farm: Sprout,
+  mh_van_mahotsav: Trees,
+  gj_social_forestry: Leaf,
 };
 
 const SCHEME_ACCENT: Record<string, string> = {
@@ -50,6 +54,10 @@ const SCHEME_ACCENT: Record<string, string> = {
   sahakar_van: "from-orange-500/15 to-amber-600/5 text-orange-900 ring-orange-500/30",
   estate_monitoring: "from-sky-500/15 to-indigo-600/5 text-sky-900 ring-sky-500/30",
   raj_amrit_poshan_vatika: "from-lime-500/15 to-green-600/5 text-lime-900 ring-lime-500/30",
+  township_landscape: "from-violet-500/15 to-fuchsia-600/5 text-violet-900 ring-violet-500/30",
+  agroforestry_farm: "from-lime-500/15 to-emerald-600/5 text-lime-900 ring-lime-500/30",
+  mh_van_mahotsav: "from-orange-500/15 to-amber-600/5 text-orange-900 ring-orange-500/30",
+  gj_social_forestry: "from-green-500/15 to-teal-600/5 text-green-900 ring-green-500/30",
 };
 
 const MINISTRY_TONE: Record<string, string> = {
@@ -61,6 +69,10 @@ const MINISTRY_TONE: Record<string, string> = {
   "Ministry of Cooperation": "bg-orange-50 text-orange-900 ring-orange-100",
   "MoM / IBM": "bg-amber-50 text-amber-900 ring-amber-100",
   "Rajasthan Forest & Rural Development": "bg-lime-50 text-lime-900 ring-lime-100",
+  "Housing / RWA": "bg-violet-50 text-violet-900 ring-violet-100",
+  "Agriculture / Rural Development": "bg-lime-50 text-lime-900 ring-lime-100",
+  "Maharashtra Forest & Urban Development": "bg-orange-50 text-orange-900 ring-orange-100",
+  "Gujarat Forest Department": "bg-green-50 text-green-900 ring-green-100",
 };
 
 function complianceLabel(mode: ComplianceMode): string {

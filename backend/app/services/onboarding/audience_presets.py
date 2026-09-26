@@ -46,7 +46,11 @@ AUDIENCE_PRESETS: dict[AudienceCode, AudiencePreset] = {
             "and board-ready sustainability exports."
         ),
         "recommended_program_code": "corporate_esg",
-        "recommended_scheme_codes": ["green_credit_india", "estate_monitoring"],
+        "recommended_scheme_codes": [
+            "green_credit_india",
+            "township_landscape",
+            "estate_monitoring",
+        ],
         "recommended_template_code": "industrial_greenbelt_v1",
         "recommended_segment": "industrial_greenbelt",
         "checklist_codes": ["esg_general"],
@@ -61,6 +65,7 @@ AUDIENCE_PRESETS: dict[AudienceCode, AudiencePreset] = {
         ),
         "recommended_program_code": "ngo_community",
         "recommended_scheme_codes": [
+            "agroforestry_farm",
             "mgnrega_convergence",
             "gim_restoration",
             "mishti_mangrove",
@@ -84,6 +89,9 @@ AUDIENCE_PRESETS: dict[AudienceCode, AudiencePreset] = {
             "nhai_highway",
             "nagar_van",
             "raj_amrit_poshan_vatika",
+            "mh_van_mahotsav",
+            "gj_social_forestry",
+            "township_landscape",
             "mgnrega_convergence",
         ],
         "recommended_template_code": "campa_ca_v1",

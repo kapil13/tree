@@ -309,6 +309,87 @@ def _mishti_mangrove_rules() -> dict[str, Any]:
     }
 
 
+def _agroforestry_farm_rules() -> dict[str, Any]:
+    return {
+        **_mgnrega_convergence_rules(),
+        "layout_pattern": "strip",
+        "block_types": [
+            "farm_forestry_strip",
+            "boundary_plantation",
+            "silvopasture",
+            "horticulture_border",
+            "fallow_land",
+            "riverbank_strip",
+        ],
+        "species_native_pct_min": 60,
+        "agroforestry_mode": True,
+        "farmer_beneficiary_required": True,
+        "planting_density_per_ha": {"min": 150, "max": 600},
+        "native_species_examples": [
+            "Neem",
+            "Khejri",
+            "Ber",
+            "Mahua",
+            "Jamun",
+            "Guava",
+            "Mango",
+            "Lemon",
+        ],
+    }
+
+
+def _mh_van_mahotsav_rules() -> dict[str, Any]:
+    return {
+        "spacing_m": {"min": 1.0, "warn_below": 0.8},
+        "pit_size_cm": {"length": 45, "width": 45, "depth": 45},
+        "max_gps_accuracy_m": 10.0,
+        "min_photos": 2,
+        "guard_type_required": False,
+        "layout_pattern": "miyawaki",
+        "allowed_species": None,
+        "species_native_pct_min": 80,
+        "planting_density_per_ha": {"min": 3000, "max": 8000},
+        "min_trees_project": 400,
+        "require_pit_photo": False,
+        "chainage_enabled": False,
+        "work_area_geometry": "polygon",
+        "block_types": [
+            "urban_forest_patch",
+            "school_plot",
+            "panchayat_land",
+            "road_median",
+            "anganwadi_plot",
+        ],
+        "miyawaki_required": True,
+        "native_species_examples": [
+            "Neem",
+            "Peepal",
+            "Banyan",
+            "Gulmohar",
+            "Jamun",
+            "Karanj",
+            "Bamboo",
+        ],
+    }
+
+
+def _gj_social_forestry_rules() -> dict[str, Any]:
+    return {
+        **_gim_restoration_rules(),
+        "block_types": [
+            "village_forest",
+            "degraded_grassland",
+            "community_plot",
+            "farm_boundary",
+            "panchayat_plot",
+        ],
+        "village_forest_committee_required": True,
+        "min_trees_project": 1000,
+        "gram_panchayat_required": True,
+        "planting_density_per_ha": {"min": 400, "max": 1200},
+    }
+
+
 def _mgnrega_convergence_rules() -> dict[str, Any]:
     return {
         **_ngo_rules(),
@@ -677,6 +758,42 @@ STANDARD_TEMPLATES: dict[str, StandardTemplate] = {
         "compliance_mode": "strict",
         "recommended_program_codes": ["government_nhai", "ngo_community"],
         "rules": _dfi_green_corridor_rules(),
+    },
+    "agroforestry_farm_v1": {
+        "code": "agroforestry_farm_v1",
+        "name": "Agroforestry & Farm Forestry",
+        "segment": "ngo_watershed",
+        "description": (
+            "Farm-boundary strips, silvopasture, and horticulture borders on farmer "
+            "and community land with MGNREGA convergence and FRA safeguards."
+        ),
+        "compliance_mode": "guided",
+        "recommended_program_codes": ["ngo_community", "government_nhai"],
+        "rules": _agroforestry_farm_rules(),
+    },
+    "mh_van_mahotsav_v1": {
+        "code": "mh_van_mahotsav_v1",
+        "name": "Van Mahotsav — Maharashtra Urban Miyawaki",
+        "segment": "nagar_van_urban",
+        "description": (
+            "Maharashtra state Van Mahotsav urban forest patches with Miyawaki-style "
+            "dense native stocking on ULB, school, and panchayat land."
+        ),
+        "compliance_mode": "guided",
+        "recommended_program_codes": ["government_nhai", "ngo_community"],
+        "rules": _mh_van_mahotsav_rules(),
+    },
+    "gj_social_forestry_v1": {
+        "code": "gj_social_forestry_v1",
+        "name": "Gujarat Social Forestry Village Plot",
+        "segment": "general",
+        "description": (
+            "Gujarat social forestry village woodlots and community plots with village "
+            "forest committee governance and gram panchayat linkage."
+        ),
+        "compliance_mode": "guided",
+        "recommended_program_codes": ["government_nhai", "ngo_community"],
+        "rules": _gj_social_forestry_rules(),
     },
 }
 
