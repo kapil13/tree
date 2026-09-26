@@ -56,6 +56,30 @@ export function programNavBoosters(user: User | null | undefined): ProgramNavBoo
     });
   }
 
+  if (audience === "government" || audience === "ngo_community") {
+    boosters.push({
+      href: "/portfolio-health?tab=compliance",
+      label: "FRA safeguards",
+      groupId: "plantation",
+    });
+  }
+
+  if (audience === "corporate_esg" || audience === "government") {
+    boosters.push({
+      href: "/projects/new",
+      label: "Township schemes",
+      groupId: "plantation",
+    });
+  }
+
+  if (audience === "ngo_community") {
+    boosters.push({
+      href: "/projects/new",
+      label: "Agroforestry schemes",
+      groupId: "plantation",
+    });
+  }
+
   const seen = new Set<string>();
   return boosters.filter((item) => {
     if (seen.has(item.href)) return false;

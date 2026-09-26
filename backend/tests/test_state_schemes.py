@@ -42,6 +42,11 @@ def test_list_schemes_filters_by_state_code():
     assert "raj_amrit_poshan_vatika" in codes
     assert "campa_ca" in codes
 
-    other_state = list_schemes(state_code="27")
-    assert "raj_amrit_poshan_vatika" not in {item["code"] for item in other_state}
-    assert "campa_ca" in {item["code"] for item in other_state}
+    maharashtra = list_schemes(state_code="27")
+    mh_codes = {item["code"] for item in maharashtra}
+    assert "raj_amrit_poshan_vatika" not in mh_codes
+    assert "mh_van_mahotsav" in mh_codes
+    assert "campa_ca" in mh_codes
+
+    gujarat = list_schemes(state_code="24")
+    assert "gj_social_forestry" in {item["code"] for item in gujarat}

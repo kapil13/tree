@@ -28,12 +28,35 @@ export type DefaultProjectSelection = {
   segment?: string;
 };
 
+export type SchemeRecommendation = {
+  code: string;
+  label: string;
+  group: string;
+  default_segment: string;
+  default_template_code: string | null;
+  checklist_codes: string[];
+  state_codes: string[];
+  primary: boolean;
+};
+
+export type JourneyStep = {
+  id: string;
+  title: string;
+  description: string;
+  href: string;
+};
+
 export type AudienceContext = {
   audience: PlantingAudience;
   preset: AudiencePreset | null;
   enrolled_program_codes: string[];
   default_project: DefaultProjectSelection;
   dashboard_highlights: DashboardHighlight[];
+  scheme_recommendations?: SchemeRecommendation[];
+  state_schemes?: SchemeRecommendation[];
+  fra_required?: boolean;
+  fra_guidance?: string | null;
+  journey_steps?: JourneyStep[];
 };
 
 export function defaultProjectSelection(

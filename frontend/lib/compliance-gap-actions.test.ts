@@ -60,4 +60,21 @@ describe("compliance-gap-actions", () => {
     expect(action.label).toBe("Map green belt areas");
     expect(action.href).toBe("/projects/proj-1/setup?step=4");
   });
+
+  it("routes FRA gram sabha gaps to safeguards section", () => {
+    const action = resolveComplianceGapAction(
+      { item_id: "gram_sabha_resolution", auto_key: "safeguards_gram_sabha" },
+      ctx,
+    );
+    expect(action.label).toBe("Upload gram sabha resolution");
+    expect(action.href).toBe("/projects/proj-1/compliance?section=safeguards");
+  });
+
+  it("routes agroforestry farmer gaps to project settings", () => {
+    const action = resolveComplianceGapAction(
+      { item_id: "farmer_beneficiary", auto_key: "farmer_beneficiary_documented" },
+      ctx,
+    );
+    expect(action.href).toBe("/projects/proj-1/settings");
+  });
 });

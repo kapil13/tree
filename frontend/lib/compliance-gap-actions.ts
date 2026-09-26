@@ -174,6 +174,58 @@ const AUTO_KEY_ACTIONS: Record<
     label: "Run NDVI scan",
     href: (ctx) => monitoringSatelliteHref(ctx),
   },
+  safeguards_gram_sabha: {
+    label: "Upload gram sabha resolution",
+    tab: "compliance",
+    anchor: "safeguards",
+  },
+  safeguards_fpic: {
+    label: "Upload FPIC minutes",
+    tab: "compliance",
+    anchor: "safeguards",
+  },
+  safeguards_tenure_ref: {
+    label: "Add tenure reference",
+    tab: "compliance",
+    anchor: "safeguards",
+  },
+  safeguards_stakeholder_log: {
+    label: "Upload stakeholder log",
+    tab: "compliance",
+    anchor: "safeguards",
+  },
+  township_rwa_documented: {
+    label: "Add RWA registration",
+    tab: "settings",
+  },
+  township_layout_documented: {
+    label: "Add layout plan ref",
+    tab: "settings",
+  },
+  farmer_beneficiary_documented: {
+    label: "Add farmer beneficiary",
+    tab: "settings",
+  },
+  land_record_documented: {
+    label: "Add land record ref",
+    tab: "settings",
+  },
+  agroforestry_plot_documented: {
+    label: "Set plot type",
+    tab: "settings",
+  },
+  miyawaki_site_documented: {
+    label: "Add Van Mahotsav site ID",
+    tab: "settings",
+  },
+  ulb_documented: {
+    label: "Add ULB reference",
+    tab: "settings",
+  },
+  village_forest_committee_documented: {
+    label: "Add VFC reference",
+    tab: "settings",
+  },
 };
 
 const ITEM_ID_ACTIONS: Record<string, ComplianceGapAction> = {

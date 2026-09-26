@@ -201,8 +201,66 @@ def _program_hints(
                 ),
             }
         )
+    elif scheme_code == "township_landscape":
+        hints.append(
+            {
+                "kind": "layout",
+                "message": (
+                    "Register trees along mapped avenue corridors and common areas — "
+                    "match the approved society landscape layout."
+                ),
+            }
+        )
+        if rules.get("guard_type_required"):
+            hints.append(
+                {
+                    "kind": "guard",
+                    "message": "Tree guards are required for avenue planting in this township template.",
+                }
+            )
+    elif scheme_code == "agroforestry_farm":
+        plot_type = refs.get("agroforestry_plot_type")
+        hints.append(
+            {
+                "kind": "tenure",
+                "message": (
+                    "Confirm farmer beneficiary and land record references before registering — "
+                    "FRA safeguards may apply on community parcels."
+                ),
+            }
+        )
+        if plot_type:
+            hints.append(
+                {
+                    "kind": "block",
+                    "message": (
+                        f"Plant within the mapped {str(plot_type).replace('_', ' ')} "
+                        "work area for agroforestry compliance."
+                    ),
+                }
+            )
+    elif scheme_code == "mh_van_mahotsav":
+        hints.append(
+            {
+                "kind": "density",
+                "message": (
+                    "Miyawaki patches use dense native stocking (3,000–8,000 trees/ha) — "
+                    "follow the Van Mahotsav site layout."
+                ),
+            }
+        )
+    elif scheme_code == "gj_social_forestry":
+        hints.append(
+            {
+                "kind": "community",
+                "message": (
+                    "Record village forest committee and gram panchayat references — "
+                    "upload gram sabha resolution in Compliance → Safeguards."
+                ),
+            }
+        )
 
-    if rules.get("guard_type_required"):
+    if scheme_code not in ("township_landscape",) and rules.get("guard_type_required"):
         hints.append(
             {
                 "kind": "guard",
@@ -305,6 +363,32 @@ def merge_project_into_tree_metadata(
         highway = refs.get("highway_number")
         if highway:
             _set_if_empty(merged, "site_zone", f"NH {highway}")
+    elif project.scheme_code == "township_landscape":
+        _set_if_empty(merged, "legal_basis", "urban_greening")
+        _set_if_empty(merged, "land_category", "urban")
+        _set_if_empty(merged, "implementing_agency", refs.get("developer_name"))
+        _set_if_empty(merged, "permit_reference", refs.get("rwa_registration_id"))
+        _set_if_empty(merged, "site_zone", refs.get("society_name"))
+    elif project.scheme_code == "agroforestry_farm":
+        _set_if_empty(merged, "legal_basis", "other")
+        _set_if_empty(merged, "land_category", "farmland")
+        _set_if_empty(merged, "permit_reference", refs.get("land_record_ref"))
+        _set_if_empty(merged, "site_zone", refs.get("village_name") or refs.get("gram_panchayat"))
+        _set_if_empty(merged, "panchayat_village", refs.get("village_name"))
+        _set_if_empty(merged, "implementing_agency", refs.get("gram_panchayat"))
+    elif project.scheme_code == "mh_van_mahotsav":
+        _set_if_empty(merged, "legal_basis", "urban_greening")
+        _set_if_empty(merged, "land_category", "urban")
+        _set_if_empty(merged, "permit_reference", refs.get("miyawaki_site_id"))
+        _set_if_empty(merged, "site_zone", refs.get("ulb_name"))
+        _set_if_empty(merged, "implementing_agency", refs.get("ulb_name"))
+    elif project.scheme_code == "gj_social_forestry":
+        _set_if_empty(merged, "legal_basis", "other")
+        _set_if_empty(merged, "land_category", "govt_land")
+        _set_if_empty(merged, "permit_reference", refs.get("beat_officer_ref"))
+        _set_if_empty(merged, "site_zone", refs.get("village_name"))
+        _set_if_empty(merged, "panchayat_village", refs.get("gram_panchayat"))
+        _set_if_empty(merged, "implementing_agency", refs.get("vfc_name"))
 
     village = refs.get("village_name") or refs.get("ulb_name")
     _set_if_empty(merged, "site_zone", village)

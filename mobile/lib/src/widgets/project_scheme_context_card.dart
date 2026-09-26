@@ -158,6 +158,37 @@ List<_MetadataRow> _metadataRows(String? schemeCode, Map refs, Map? metadata) {
   if (refs['nagar_van_project_id'] != null) {
     generic.add(_MetadataRow('Nagar Van ID', '${refs['nagar_van_project_id']}'));
   }
+  if (schemeCode == 'township_landscape') {
+    if (refs['society_name'] != null) {
+      generic.insert(0, _MetadataRow('Society', '${refs['society_name']}'));
+    }
+    if (refs['rwa_registration_id'] != null) {
+      generic.add(_MetadataRow('RWA ID', '${refs['rwa_registration_id']}'));
+    }
+  }
+  if (schemeCode == 'agroforestry_farm') {
+    if (refs['farmer_beneficiary_id'] != null) {
+      generic.add(_MetadataRow('Beneficiary', '${refs['farmer_beneficiary_id']}'));
+    }
+    if (refs['land_record_ref'] != null) {
+      generic.add(_MetadataRow('Land record', '${refs['land_record_ref']}'));
+    }
+    if (refs['agroforestry_plot_type'] != null) {
+      generic.add(
+        _MetadataRow('Plot type', '${refs['agroforestry_plot_type']}'.replaceAll('_', ' ')),
+      );
+    }
+  }
+  if (schemeCode == 'mh_van_mahotsav') {
+    if (refs['miyawaki_site_id'] != null) {
+      generic.add(_MetadataRow('Site ID', '${refs['miyawaki_site_id']}'));
+    }
+    if (refs['ulb_name'] != null) generic.add(_MetadataRow('ULB', '${refs['ulb_name']}'));
+  }
+  if (schemeCode == 'gj_social_forestry') {
+    if (refs['vfc_name'] != null) generic.add(_MetadataRow('VFC', '${refs['vfc_name']}'));
+    if (refs['village_name'] != null) generic.add(_MetadataRow('Village', '${refs['village_name']}'));
+  }
   if (schemeCode == 'mining_reclamation') {
     if (refs['mine_lease_number'] != null) {
       generic.insert(0, _MetadataRow('Mine lease', '${refs['mine_lease_number']}'));
