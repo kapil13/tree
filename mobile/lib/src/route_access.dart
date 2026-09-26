@@ -10,7 +10,7 @@ class _RouteRule {
 
 const _routeRules = [
   _RouteRule('/trees/new', 'can_write'),
-  _RouteRule('/projects', ['professional', 'field_supervisor', 'field_worker']),
+  _RouteRule('/projects', ['professional', 'field_supervisor', 'field_worker', 'verifier']),
   _RouteRule('/bioacoustic', 'professional'),
   _RouteRule('/field', 'can_write'),
   _RouteRule('/field-ops', 'can_write'),

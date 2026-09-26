@@ -21,6 +21,7 @@ export default function VerificationQueuePage() {
   });
 
   const [activeSampleId, setActiveSampleId] = useState<string | null>(null);
+  const [attestNotes, setAttestNotes] = useState("");
 
   const sampleQ = useQuery({
     queryKey: scopedKey(user, "verification-sample", activeSampleId),
@@ -33,11 +34,17 @@ export default function VerificationQueuePage() {
       sampleId,
       itemId,
       status,
+      notes,
     }: {
       sampleId: string;
       itemId: string;
       status: "approved" | "rejected";
-    }) => verificationWorkflow.attestItem(sampleId, itemId, { status }),
+      notes?: string;
+    }) =>
+      verificationWorkflow.attestItem(sampleId, itemId, {
+        status,
+        notes: notes?.trim() || undefined,
+      }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: scopedKey(user, "verification-samples") });
       if (activeSampleId) {
@@ -110,53 +117,69 @@ export default function VerificationQueuePage() {
                 description={t("sampleCompleteDescription")}
               />
             ) : (
-              <ul className="divide-y divide-stone-100 dark:divide-stone-800">
-                {pendingItems.map((item) => (
-                  <li key={item.id} className="flex items-center justify-between gap-3 py-3">
-                    <div>
-                      <Link
-                        href={`/trees/${item.tree_id}`}
-                        className="font-medium text-forest-800 hover:underline"
-                      >
-                        {item.tree_public_code ?? item.tree_id}
-                      </Link>
-                      <p className="text-xs text-stone-500">{t("pendingAttestation")}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className="btn-primary text-xs"
-                        disabled={attest.isPending}
-                        onClick={() =>
-                          attest.mutate({
-                            sampleId: activeSampleId,
-                            itemId: item.id,
-                            status: "approved",
-                          })
-                        }
-                      >
-                        <Check className="h-3 w-3" />
-                        {t("approve")}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary text-xs"
-                        disabled={attest.isPending}
-                        onClick={() =>
-                          attest.mutate({
-                            sampleId: activeSampleId,
-                            itemId: item.id,
-                            status: "rejected",
-                          })
-                        }
-                      >
-                        <X className="h-3 w-3" />
-                        {t("reject")}
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-4">
+                <div>
+                  <label className="label text-xs" htmlFor="attest-notes">
+                    {t("notesLabel")}
+                  </label>
+                  <textarea
+                    id="attest-notes"
+                    className="input mt-1 min-h-[72px] w-full text-sm"
+                    placeholder={t("notesPlaceholder")}
+                    value={attestNotes}
+                    onChange={(e) => setAttestNotes(e.target.value)}
+                  />
+                </div>
+                <ul className="divide-y divide-stone-100 dark:divide-stone-800">
+                  {pendingItems.map((item) => (
+                    <li key={item.id} className="flex items-center justify-between gap-3 py-3">
+                      <div>
+                        <Link
+                          href={`/trees/${item.tree_id}`}
+                          className="font-medium text-forest-800 hover:underline"
+                        >
+                          {item.tree_public_code ?? item.tree_id}
+                        </Link>
+                        <p className="text-xs text-stone-500">{t("pendingAttestation")}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="btn-primary text-xs"
+                          disabled={attest.isPending}
+                          onClick={() =>
+                            attest.mutate({
+                              sampleId: activeSampleId,
+                              itemId: item.id,
+                              status: "approved",
+                              notes: attestNotes,
+                            })
+                          }
+                        >
+                          <Check className="h-3 w-3" />
+                          {t("approve")}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary text-xs"
+                          disabled={attest.isPending}
+                          onClick={() =>
+                            attest.mutate({
+                              sampleId: activeSampleId,
+                              itemId: item.id,
+                              status: "rejected",
+                              notes: attestNotes,
+                            })
+                          }
+                        >
+                          <X className="h-3 w-3" />
+                          {t("reject")}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
             {attest.error ? (
               <p className="mt-3 text-xs text-rose-700">{errorMessage(attest.error)}</p>

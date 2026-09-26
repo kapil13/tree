@@ -2126,7 +2126,7 @@ export const plantingProjects = {
     projectId: string,
     payload: {
       user_id: string;
-      role: "field_supervisor" | "field_worker";
+      role: "field_supervisor" | "field_worker" | "project_verifier" | "project_viewer";
       contractor_name?: string;
       work_area_ids?: string[];
     },

@@ -6,12 +6,16 @@ export type NavAudience =
   | "professional"
   | "field_worker"
   | "field_supervisor"
+  | "verifier"
   | "org_admin"
   | "byot"
   | "can_write";
 
 const PROFESSIONAL_ROLES = new Set<string>(rbacPolicy.professional_roles);
 const FIELD_WORKER_ROLES = new Set<string>(rbacPolicy.field_worker_roles);
+const VERIFIER_ROLES = new Set<string>(
+  (rbacPolicy as { verifier_roles?: string[] }).verifier_roles ?? [],
+);
 
 export function userHasProfessionalAccess(user: User | null | undefined): boolean {
   if (!user) return false;
@@ -25,6 +29,16 @@ export function isOrgAdmin(user: User | null | undefined): boolean {
 
 export function isOrgViewer(user: User | null | undefined): boolean {
   return user?.org_role === "viewer";
+}
+
+export function isVerifier(user: User | null | undefined): boolean {
+  if (!user) return false;
+  if (user.role === "admin") return true;
+  return VERIFIER_ROLES.has(user.role) || user.org_role === "verifier";
+}
+
+export function canAttestMeasurements(user: User | null | undefined): boolean {
+  return isVerifier(user);
 }
 
 export function canWriteInApp(user: User | null | undefined): boolean {
@@ -70,6 +84,8 @@ export function canSeeNavItem(
         return fieldWorker || supervisor || professional;
       case "field_supervisor":
         return supervisor || professional;
+      case "verifier":
+        return isVerifier(user);
       case "org_admin":
         return orgAdmin || user.role === "admin";
       case "can_write":

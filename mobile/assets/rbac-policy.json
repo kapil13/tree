@@ -2,8 +2,10 @@
   "version": 1,
   "platform_admin_role": "admin",
   "professional_roles": ["government", "corporate", "ngo", "field_supervisor"],
+  "verifier_roles": ["verifier"],
   "field_worker_roles": ["field_worker"],
   "org_viewer_role": "viewer",
   "org_supervisor_role": "supervisor",
-  "org_worker_role": "worker"
+  "org_worker_role": "worker",
+  "org_verifier_role": "verifier"
 }

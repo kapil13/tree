@@ -13,6 +13,7 @@ const ORG_ROLES = [
   { value: "supervisor", label: "Field supervisor" },
   { value: "worker", label: "Field worker" },
   { value: "viewer", label: "Viewer / auditor" },
+  { value: "verifier", label: "Verifier (attest only)" },
 ] as const;
 
 const ERROR_LABELS: Record<string, string> = {

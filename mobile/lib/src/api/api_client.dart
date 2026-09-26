@@ -451,6 +451,16 @@ class ApiClient {
   Future<Map<String, dynamic>> onboardingState() async =>
       Map<String, dynamic>.from((await _dio.get('/auth/onboarding')).data);
 
+  Future<List<Map<String, dynamic>>> audiencePresets() async {
+    final r = await _dio.get('/onboarding/audience-presets');
+    final items = r.data['items'] as List<dynamic>? ?? [];
+    return items.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<void> selectAudience(String audience) async {
+    await _dio.post('/onboarding/audience', data: {'audience': audience});
+  }
+
   Future<Map<String, dynamic>> me() async =>
       Map<String, dynamic>.from((await _dio.get('/auth/me')).data);
 

@@ -90,7 +90,7 @@ export const organizations = {
     full_name: string;
     email?: string;
     phone?: string;
-    org_role: "manager" | "supervisor" | "worker" | "viewer";
+    org_role: "manager" | "supervisor" | "worker" | "viewer" | "verifier";
   }) {
     return (
       await api.post<{

@@ -2195,6 +2195,8 @@
     "sampleCompleteTitle": "Sample complete",
     "sampleCompleteDescription": "All trees in this sample have been attested.",
     "pendingAttestation": "Pending attestation",
+    "notesLabel": "Attestation notes (optional)",
+    "notesPlaceholder": "Record field conditions, measurement concerns, or rejection rationale…",
     "approve": "Approve",
     "reject": "Reject"
   },

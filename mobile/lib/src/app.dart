@@ -17,6 +17,7 @@ import 'screens/signup_screen.dart';
 import 'screens/auth_flow_screens.dart';
 import 'screens/onboarding_screens.dart';
 import 'screens/org_profile_wizard_screen.dart';
+import 'screens/audience_onboarding_screen.dart';
 import 'screens/home_route_screen.dart';
 import 'screens/tree_list_screen.dart';
 import 'screens/add_tree_screen.dart';
@@ -62,7 +63,8 @@ bool _isPublicRoute(String loc) {
       loc == '/auth' ||
       loc.startsWith('/auth/') ||
       loc.startsWith('/p/') ||
-      loc == '/onboarding/pending';
+      loc == '/onboarding/pending' ||
+      loc == '/onboarding/audience';
 }
 
 final _routerProvider = Provider<GoRouter>((ref) {
@@ -74,7 +76,8 @@ final _routerProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       final user = sessionController.user;
 
-      if (loc == '/onboarding/org-profile' && !sessionController.authenticated) {
+      if ((loc == '/onboarding/org-profile' || loc == '/onboarding/audience') &&
+          !sessionController.authenticated) {
         return '/login';
       }
 
@@ -146,6 +149,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => TreeDetailDeepLinkScreen(code: state.pathParameters['code']!),
       ),
       GoRoute(path: '/onboarding/pending', builder: (_, __) => const OnboardingPendingScreen()),
+      GoRoute(path: '/onboarding/audience', builder: (_, __) => const AudienceOnboardingScreen()),
       GoRoute(path: '/onboarding/org-profile', builder: (_, __) => const OrgProfileWizardScreen()),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,

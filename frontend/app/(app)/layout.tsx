@@ -7,6 +7,7 @@ import { Topbar } from "@/components/topbar";
 import { ImpersonationBanner } from "@/components/platform/impersonation-banner";
 import { OrgFeatureFlagsBanner } from "@/components/org-feature-flags-banner";
 import { MaintenanceBanner } from "@/components/platform/maintenance-banner";
+import { ViewerReadOnlyBanner } from "@/components/viewer-read-only-banner";
 import { LocaleBootstrap } from "@/components/locale-bootstrap";
 import { ProjectContextProvider } from "@/lib/project-context";
 import { NOINDEX_METADATA } from "@/lib/seo/noindex";
@@ -26,6 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex flex-col gap-0.5 bg-stone-200/80 dark:bg-stone-800">
               <ImpersonationBanner />
               <MaintenanceBanner />
+              <ViewerReadOnlyBanner />
               <OrgFeatureFlagsBanner />
             </div>
             <Topbar />

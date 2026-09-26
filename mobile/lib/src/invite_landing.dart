@@ -10,7 +10,9 @@ String inviteLandingRoute(String? orgRole) {
     case 'worker':
       return '/projects';
     case 'viewer':
-      return '/trees';
+      return '/reports';
+    case 'verifier':
+      return '/projects';
     default:
       return '/home';
   }

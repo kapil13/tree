@@ -14,7 +14,7 @@ from app.models.user import User
 from app.services.onboarding.audience_storage import copy_audience_from_profile_to_org
 from app.services.planting_programs.enrollment import list_user_program_codes, set_user_programs
 
-ORG_ROLES = frozenset({"manager", "supervisor", "worker", "viewer"})
+ORG_ROLES = frozenset({"manager", "supervisor", "worker", "viewer", "verifier"})
 PROGRAM_PLATFORM_ROLES = {
     "government_nhai": "government",
     "corporate_esg": "corporate",
@@ -67,6 +67,8 @@ def platform_role_for_org_member(org_role: str, org_type: str) -> str:
         return "field_supervisor"
     if org_role == "worker":
         return "field_worker"
+    if org_role == "verifier":
+        return "verifier"
     if org_role == "viewer":
         return org_type if org_type in {"government", "corporate", "ngo"} else "government"
     return org_type if org_type in {"government", "corporate", "ngo"} else "government"

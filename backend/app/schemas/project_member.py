@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 class ProjectMemberCreate(BaseModel):
     user_id: uuid.UUID
-    role: str = Field(pattern="^(field_supervisor|field_worker)$")
+    role: str = Field(pattern="^(field_supervisor|field_worker|project_verifier|project_viewer)$")
     contractor_name: str | None = None
     work_area_ids: list[uuid.UUID] | None = None
 
