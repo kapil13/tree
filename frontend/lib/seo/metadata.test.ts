@@ -1,6 +1,15 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { buildPageMetadata, HOME_PAGE_TITLE, homePageMetadata } from "./metadata";
+import {
+  buildPageMetadata,
+  HOME_PAGE_TITLE,
+  homePageMetadata,
+  NOT_FOUND_METADATA,
+  ROOT_METADATA,
+} from "./metadata";
 import { DEFAULT_DESCRIPTION } from "./site";
 
 describe("homePageMetadata", () => {
@@ -45,5 +54,20 @@ describe("homePageMetadata", () => {
     });
     expect(withQuery.alternates).toEqual({ canonical: "/auth" });
     expect(withQuery.openGraph).toMatchObject({ url: "https://aranyix.tech/auth" });
+  });
+});
+
+describe("not-found metadata", () => {
+  it("clears the root layout canonical and does not add a robots tag", () => {
+    expect(ROOT_METADATA.alternates).toEqual({ canonical: "./" });
+    expect(NOT_FOUND_METADATA).toEqual({
+      alternates: { canonical: null },
+    });
+  });
+
+  it("is what the not-found page exports", () => {
+    const source = readFileSync(path.join(__dirname, "../../app/not-found.tsx"), "utf8");
+    expect(source).toContain('import { NOT_FOUND_METADATA } from "@/lib/seo/metadata"');
+    expect(source).toContain("export const metadata = NOT_FOUND_METADATA");
   });
 });

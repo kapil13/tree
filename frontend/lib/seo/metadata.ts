@@ -77,6 +77,19 @@ export function buildPageMetadata({
   };
 }
 
+/**
+ * Metadata for `app/not-found.tsx`.
+ *
+ * A 404 is rendered with the root layout, so `ROOT_METADATA`'s relative
+ * canonical (`./`) would otherwise resolve to a self-canonical of the missing
+ * URL. `canonical: null` replaces that `alternates` object and emits no
+ * canonical link. Robots are left unset: Next.js already injects one
+ * `noindex` on 404 responses, and a second robots tag would conflict with it.
+ */
+export const NOT_FOUND_METADATA: Metadata = {
+  alternates: { canonical: null },
+};
+
 export const ROOT_METADATA: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {

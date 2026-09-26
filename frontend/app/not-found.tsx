@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { NOT_FOUND_METADATA } from "@/lib/seo/metadata";
+
+export const metadata = NOT_FOUND_METADATA;
+
 export default async function NotFound() {
   const t = await getTranslations("marketing");
 
