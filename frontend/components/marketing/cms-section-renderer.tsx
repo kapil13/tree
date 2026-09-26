@@ -119,7 +119,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
       const highlight = String(c.title_highlight || "");
       return (
         <section className="marketing-hero">
-          <div className="marketing-hero-grid relative z-10 mx-auto min-h-[min(92vh,54rem)] max-w-7xl px-6 py-16 sm:py-20 lg:py-24">
+          <div className="marketing-hero-grid relative z-10 mx-auto min-h-[min(92vh,54rem)] max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:py-24">
             <div className="marketing-hero-copy space-y-7">
               {c.pill ? (
                 <p className="marketing-pill marketing-pill--hero motion-fade-up">
@@ -199,7 +199,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
       const rest = items.slice(2);
       return (
         <section id={section.anchor_id || undefined} className="marketing-platform">
-          <div className="mx-auto max-w-7xl px-6 py-20">
+          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
             <div className="marketing-section-head">
               <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
               <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>

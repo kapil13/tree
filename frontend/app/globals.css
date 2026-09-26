@@ -213,6 +213,16 @@ html[lang="hi"] body {
     linear-gradient(180deg, #f7faf8 0%, #ffffff 42%, #f4f8f5 100%);
 }
 
+/* Responsive marketing media — never crop infographic overlays */
+.marketing-page img,
+.marketing-page video,
+.marketing-page .marketing-infographic {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
 .marketing-header {
   @apply sticky top-0 z-50 border-b border-white/60 bg-white/75 backdrop-blur-xl;
 }
@@ -236,7 +246,6 @@ html[lang="hi"] body {
 .marketing-hero {
   position: relative;
   overflow: hidden;
-  overflow-x: clip;
   color: #ecfdf5;
   background:
     radial-gradient(circle at 12% 18%, rgba(74, 222, 128, 0.24), transparent 38%),
@@ -437,8 +446,12 @@ html[lang="hi"] body {
 
 .marketing-mosaic-map svg,
 .marketing-mosaic-sat svg {
-  display: block;
-  min-height: 16rem;
+  aspect-ratio: 640 / 360;
+}
+
+.marketing-bio-strip svg {
+  aspect-ratio: 1100 / 168;
+  min-height: 7.5rem;
 }
 
 .marketing-mosaic-caption {
