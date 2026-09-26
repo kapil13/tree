@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -34,7 +33,6 @@ async def test_record_site_visit_dedupes_same_path_same_day():
 @pytest.mark.asyncio
 async def test_get_site_visit_stats_returns_counts():
     db = AsyncMock()
-    today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
 
     async def fake_execute(stmt):
         result = MagicMock()

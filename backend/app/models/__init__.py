@@ -64,7 +64,6 @@ from app.models.emission_source import (
     EmissionSource,
 )
 from app.models.messaging_delivery import MessageDeliveryReceipt, SuppressedRecipient
-from app.models.site_visit import SiteVisit
 from app.models.monitoring_job_run import MonitoringJobRun
 from app.models.monitoring_scan_target import MonitoringScanTarget
 from app.models.organization import Organization
@@ -98,6 +97,7 @@ from app.models.public_verification import PublicVerificationLink
 from app.models.report import Report
 from app.models.satellite import SatelliteRecord
 from app.models.satellite_health_analysis import SatelliteHealthAnalysis
+from app.models.site_visit import SiteVisit
 from app.models.species import Species
 from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
