@@ -21,6 +21,10 @@ const _routeRules = [
   _RouteRule('/evidence', ['professional', 'field_supervisor']),
   _RouteRule('/biodiversity', 'professional'),
   _RouteRule('/audit', ['professional', 'field_supervisor', 'field_worker'], excludeViewers: true),
+  _RouteRule('/portfolio', ['professional', 'field_supervisor']),
+  _RouteRule('/satellite', ['professional', 'field_supervisor']),
+  _RouteRule('/verification', ['professional', 'field_supervisor', 'verifier']),
+  _RouteRule('/plot-visits', ['professional', 'field_supervisor', 'field_worker'], excludeViewers: true),
   _RouteRule('/carbon', 'all'),
 ];
 

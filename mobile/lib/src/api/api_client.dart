@@ -1340,4 +1340,201 @@ class ApiClient {
     );
     return parseTokenResponse(r.data);
   }
+
+  // --- Phase F mobile parity ---
+
+  Future<List<dynamic>> listCentralSchemes({String? segment}) async {
+    final r = await _dio.get('/schemes', queryParameters: {
+      if (segment != null) 'segment': segment,
+      'page_size': 100,
+    });
+    return List<dynamic>.from(r.data['items'] ?? r.data ?? []);
+  }
+
+  Future<Map<String, dynamic>> updatePlantingProject(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    final r = await _dio.patch('/planting-projects/$id', data: data);
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> patchSchemeMetadata(
+    String projectId,
+    Map<String, dynamic> schemeRefs,
+  ) async {
+    final r = await _dio.patch(
+      '/planting-projects/$projectId/scheme-metadata',
+      data: {'scheme_refs': schemeRefs},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> scanPlantationFence(String fenceId) async {
+    final r = await _dio.post('/plantation-fences/$fenceId/scan');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> scanWorkAreaSatellite(
+    String projectId,
+    String workAreaId,
+  ) async {
+    final r = await _dio.post(
+      '/planting-projects/$projectId/work-areas/$workAreaId/satellite-scan',
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> scanSarFence(String fenceId) async {
+    final r = await _dio.post(
+      '/sar/work-areas/$fenceId/scan',
+      options: Options(receiveTimeout: const Duration(seconds: 120)),
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getSarMonitoring(String fenceId) async {
+    final r = await _dio.get('/sar/work-areas/$fenceId/monitoring');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getSarStatus() async {
+    final r = await _dio.get('/sar/status');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getBhoonidhiStatus() async {
+    final r = await _dio.get('/bhoonidhi/status');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> getBhoonidhiCatalog(String fenceId) async {
+    final r = await _dio.get('/bhoonidhi/plantation-fences/$fenceId/catalog');
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>?> getAuditEngagementForProject(String projectId) async {
+    try {
+      final r = await _dio.get('/audit-engagements/projects/$projectId');
+      return Map<String, dynamic>.from(r.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createAuditEngagement(String projectId) async {
+    final r = await _dio.post('/audit-engagements/projects/$projectId');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listVerificationSamples({bool pendingOnly = true}) async {
+    final r = await _dio.get(
+      '/verification/samples',
+      queryParameters: pendingOnly ? {'pending_only': true} : null,
+    );
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> getVerificationSample(String sampleId) async {
+    final r = await _dio.get('/verification/samples/$sampleId');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> attestVerificationItem(
+    String sampleId,
+    String itemId, {
+    required String decision,
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/verification/samples/$sampleId/items/$itemId/attest',
+      data: {
+        'decision': decision,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getComplianceChecklist(String projectId) async {
+    final r = await _dio.get('/compliance/projects/$projectId/checklists');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listBioacousticMonitoringPlans(String projectId) async {
+    final r = await _dio.get('/bioacoustic/projects/$projectId/monitoring-plans');
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? []);
+  }
+
+  Future<List<dynamic>> ensureBioacousticMonitoringPlans(String projectId) async {
+    final r = await _dio.post('/bioacoustic/projects/$projectId/monitoring-plans/ensure');
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? data ?? []);
+  }
+
+  Future<List<dynamic>> listBioacousticReviewQueue({String? fenceId}) async {
+    final r = await _dio.get(
+      '/bioacoustic/review-queue',
+      queryParameters: fenceId != null ? {'plantation_fence_id': fenceId} : null,
+    );
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> submitBioacousticReview(
+    String recordingId, {
+    required String decision,
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/bioacoustic/recordings/$recordingId/reviews',
+      data: {
+        'decision': decision,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getPlotMonitoringSummary(String projectId) async {
+    final r = await _dio.get('/plot-monitoring/projects/$projectId/summary');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listPlotMonitoringPlots(
+    String projectId, {
+    String? status,
+  }) async {
+    final r = await _dio.get(
+      '/plot-monitoring/projects/$projectId/plots',
+      queryParameters: status != null ? {'status': status} : null,
+    );
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> recordPlotVisit(
+    String plotId, {
+    required Map<String, dynamic> observation,
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/plot-monitoring/plots/$plotId/visits',
+      data: {
+        'observation': observation,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
 }

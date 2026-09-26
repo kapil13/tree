@@ -60,7 +60,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
+    _tabs = TabController(length: 4, vsync: this);
     Future.microtask(() async {
       await ref.read(bioacousticQueueProvider).init();
       try {
@@ -354,6 +354,8 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
                 tabs: [
                   Tab(text: l10n.bioTabRecord, icon: const Icon(Icons.mic_rounded)),
                   Tab(text: l10n.bioTabHistory, icon: const Icon(Icons.history_rounded)),
+                  const Tab(text: 'Plans', icon: Icon(Icons.event_note_outlined)),
+                  const Tab(text: 'Review', icon: Icon(Icons.fact_check_outlined)),
                 ],
               ),
               Expanded(
@@ -389,6 +391,8 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
                       statusIcon: _queueStatusIcon,
                       iucnColor: _iucnColor,
                     ),
+                    _BioMonitoringPlansTab(fenceId: _selectedFenceId),
+                    _BioReviewQueueTab(fenceId: _selectedFenceId),
                   ],
                 ),
               ),
@@ -796,6 +800,86 @@ class _OfflineQueueSectionState extends State<_OfflineQueueSection> {
           );
         }),
       ],
+    );
+  }
+}
+
+class _BioMonitoringPlansTab extends ConsumerWidget {
+  const _BioMonitoringPlansTab({this.fenceId});
+  final String? fenceId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final projectsAsync = ref.watch(plantingProjectsProvider);
+    return projectsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+      data: (projects) {
+        if (projects.isEmpty) return const Center(child: Text('No projects'));
+        final projectId = (projects.first as Map)['id'] as String;
+        return FutureBuilder<List<dynamic>>(
+          future: ref.read(apiClientProvider.future).then((api) async {
+            await api.ensureBioacousticMonitoringPlans(projectId);
+            return api.listBioacousticMonitoringPlans(projectId);
+          }),
+          builder: (context, snap) {
+            if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+            final plans = snap.data!;
+            if (plans.isEmpty) return const Center(child: Text('No monitoring plans'));
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: plans.length,
+              itemBuilder: (_, i) {
+                final p = plans[i] as Map;
+                return ListTile(
+                  title: Text(p['label'] as String? ?? p['protocol_key'] as String? ?? 'Plan'),
+                  subtitle: Text('${p['status']} · due ${p['next_due_at'] ?? '—'}'),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _BioReviewQueueTab extends ConsumerWidget {
+  const _BioReviewQueueTab({this.fenceId});
+  final String? fenceId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final queueAsync = ref.watch(bioacousticReviewQueueProvider(fenceId));
+    return queueAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+      data: (items) {
+        if (items.isEmpty) return const Center(child: Text('Review queue empty'));
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: items.length,
+          itemBuilder: (_, i) {
+            final item = items[i] as Map;
+            return ListTile(
+              title: Text(item['scientific_name'] as String? ?? item['common_name'] as String? ?? 'Detection'),
+              subtitle: Text('${item['confidence']} · ${item['detection_tier']}'),
+              trailing: PopupMenuButton<String>(
+                onSelected: (d) async {
+                  final api = await ref.read(apiClientProvider.future);
+                  await api.submitBioacousticReview(item['recording_id'] as String, decision: d);
+                  ref.invalidate(bioacousticReviewQueueProvider(fenceId));
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'confirmed', child: Text('Confirm')),
+                  PopupMenuItem(value: 'rejected', child: Text('Reject')),
+                  PopupMenuItem(value: 'indeterminate', child: Text('Indeterminate')),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

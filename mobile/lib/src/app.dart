@@ -47,6 +47,14 @@ import 'screens/audit_plot_visit_screen.dart';
 import 'screens/audit_workspace_screen.dart';
 import 'screens/citizen_adopt_screen.dart';
 import 'screens/citizen_stewardship_screen.dart';
+import 'screens/project_wizard_screen.dart';
+import 'screens/project_setup_screen.dart';
+import 'screens/portfolio_hub_screen.dart';
+import 'screens/satellite_workspace_screen.dart';
+import 'screens/project_audit_workspace_screen.dart';
+import 'screens/verification_screen.dart';
+import 'screens/compliance_checklist_screen.dart';
+import 'screens/plot_visit_queue_screen.dart';
 import 'api/auth_redirect.dart';
 import 'api/api_errors.dart';
 import 'widgets/app_shell.dart';
@@ -203,8 +211,48 @@ final _routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/projects/new',
+        builder: (_, __) => const ProjectWizardScreen(),
+      ),
+      GoRoute(
+        path: '/projects/:id/setup',
+        builder: (_, s) => ProjectSetupScreen(
+          projectId: s.pathParameters['id']!,
+          initialStep: int.tryParse(s.uri.queryParameters['step'] ?? '') ?? 1,
+        ),
+      ),
+      GoRoute(
+        path: '/projects/:id/compliance',
+        builder: (_, s) => ComplianceChecklistScreen(projectId: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/projects/:id/audit',
+        builder: (_, s) => ProjectAuditWorkspaceScreen(
+          projectId: s.pathParameters['id']!,
+          initialPhase: s.uri.queryParameters['phase'],
+        ),
+      ),
+      GoRoute(
         path: '/projects/:id',
         builder: (_, s) => ProjectDetailScreen(projectId: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/portfolio',
+        builder: (_, s) => PortfolioHubScreen(
+          initialTab: int.tryParse(s.uri.queryParameters['tab'] ?? '') ?? 0,
+        ),
+      ),
+      GoRoute(
+        path: '/satellite',
+        builder: (_, s) => SatelliteWorkspaceScreen(
+          fenceId: s.uri.queryParameters['fence'],
+          projectId: s.uri.queryParameters['project'],
+        ),
+      ),
+      GoRoute(path: '/verification', builder: (_, __) => const VerificationScreen()),
+      GoRoute(
+        path: '/plot-visits',
+        builder: (_, s) => PlotVisitQueueScreen(projectId: s.uri.queryParameters['project']),
       ),
       GoRoute(
         path: '/trees/:id/survival',

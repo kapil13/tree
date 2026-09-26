@@ -30,6 +30,11 @@ void main() {
     expect(routes, isNot(contains('/monitoring')));
     expect(routes, contains('/reports'));
     expect(routes, contains('/carbon'));
+    expect(routes, contains('/portfolio'));
+    expect(routes, contains('/satellite'));
+    expect(routes, contains('/verification'));
+    expect(routes, contains('/citizen/stewardship'));
+    expect(routes, contains('/onboarding/audience'));
   });
 
   test('field fab routes exclude home and field capture-bar tabs', () {

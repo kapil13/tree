@@ -76,6 +76,19 @@ const mobileNavGroups = [
         audience: ['professional', 'field_supervisor', 'field_worker'],
         excludeViewers: true,
       ),
+      MobileNavItem(
+        route: '/portfolio',
+        labelKey: 'navPortfolio',
+        icon: Icons.dashboard_outlined,
+        audience: ['professional', 'field_supervisor'],
+      ),
+      MobileNavItem(
+        route: '/plot-visits',
+        labelKey: 'navPlotVisits',
+        icon: Icons.grid_on_outlined,
+        audience: ['professional', 'field_supervisor', 'field_worker'],
+        excludeViewers: true,
+      ),
     ],
   ),
   MobileNavGroup(
@@ -93,6 +106,18 @@ const mobileNavGroups = [
         labelKey: 'reportTypeBiodiversity',
         icon: Icons.hive_outlined,
         audience: 'professional',
+      ),
+      MobileNavItem(
+        route: '/satellite',
+        labelKey: 'navSatellite',
+        icon: Icons.satellite_alt_outlined,
+        audience: ['professional', 'field_supervisor'],
+      ),
+      MobileNavItem(
+        route: '/verification',
+        labelKey: 'navVerification',
+        icon: Icons.rule_outlined,
+        audience: ['professional', 'field_supervisor', 'verifier'],
       ),
     ],
   ),
@@ -144,6 +169,24 @@ const mobileNavGroups = [
     ],
   ),
   MobileNavGroup(
+    id: 'stewardship',
+    labelKey: 'navSectionStewardship',
+    items: [
+      MobileNavItem(
+        route: '/citizen/stewardship',
+        labelKey: 'navStewardship',
+        icon: Icons.forest_outlined,
+        audience: 'all',
+      ),
+      MobileNavItem(
+        route: '/citizen/adopt',
+        labelKey: 'navAdoptTree',
+        icon: Icons.volunteer_activism_outlined,
+        audience: 'all',
+      ),
+    ],
+  ),
+  MobileNavGroup(
     id: 'account',
     labelKey: 'navSectionAccount',
     items: [
@@ -152,6 +195,12 @@ const mobileNavGroups = [
         labelKey: 'profile',
         icon: Icons.person_outline,
         exact: true,
+      ),
+      MobileNavItem(
+        route: '/onboarding/audience',
+        labelKey: 'navAudienceOnboarding',
+        icon: Icons.groups_outlined,
+        audience: 'all',
       ),
     ],
   ),

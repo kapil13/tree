@@ -2,8 +2,6 @@ import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../api/api_errors.dart';
 import '../field_ops_actions.dart';
 import '../integrity_remediation.dart';
@@ -85,6 +83,24 @@ class ProjectDetailScreen extends ConsumerWidget {
                 setup: setup,
                 l10n: l10n,
                 onOpenSetup: () => _openSetup(context, ref),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => context.push('/projects/$projectId/compliance'),
+                    child: const Text('Compliance'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => context.push('/projects/$projectId/audit'),
+                    child: const Text('Estate Watch'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => context.push('/satellite?project=$projectId'),
+                    child: const Text('Satellite'),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               integrityAsync.when(
@@ -208,10 +224,8 @@ class ProjectDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _openSetup(BuildContext context, WidgetRef ref) async {
-    final api = await ref.read(apiClientProvider.future);
-    final uri = Uri.parse(projectSetupWebUrl(projectId, apiBase: api.baseUrl));
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  void _openSetup(BuildContext context, WidgetRef ref) {
+    context.push('/projects/$projectId/setup');
   }
 
   String _densityLabel(AppLocalizations l10n, Map<String, dynamic> wa, String segment) {
@@ -304,7 +318,7 @@ class _SetupStatusCard extends StatelessWidget {
               ),
             if (!setup.canRegisterTree) ...[
               const SizedBox(height: 8),
-              TextButton(onPressed: onOpenSetup, child: Text(l10n.openSetupOnWeb)),
+              TextButton(onPressed: onOpenSetup, child: Text(l10n.completeSetup)),
             ],
           ],
         ),
