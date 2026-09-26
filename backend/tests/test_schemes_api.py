@@ -92,11 +92,12 @@ async def test_audience_presets_endpoint(auth_client):
         response = await client.get("/api/v1/onboarding/audience-presets")
     assert response.status_code == 200
     items = response.json()["items"]
-    assert len(items) == 5
+    assert len(items) == 6
     assert {item["code"] for item in items} == {
         "mining",
         "corporate_esg",
         "government",
+        "ngo_community",
         "international",
         "general",
     }
