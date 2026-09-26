@@ -360,7 +360,7 @@
         "copy": "Spatial greenhouse-gas intelligence for planted sites — satellite methane context, registered sources, dispersion modelling, and fusion inside the project work area.",
         "cta": {
           "label": "Open emissions workspace",
-          "href": "/auth?mode=signin&next=/projects"
+          "href": "/auth?mode=signin&next=/emissions"
         }
       }
     },

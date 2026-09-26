@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bug, CheckCircle, Link2 } from "lucide-react";
+import { emissionsHref } from "@/lib/emissions-links";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { ComplianceHubLinks } from "@/components/compliance/compliance-hub-links";
 import { ProjectComplianceChecklistPanel } from "@/components/projects/project-compliance-checklist-panel";
@@ -425,11 +426,22 @@ export function ProjectComplianceTab({
         )}
 
         {section === "emissions" && (
-          <ProjectEmissionsPanel
-            projectId={projectId}
-            projectCode={projectCode}
-            workAreas={workAreas}
-          />
+          <div className="space-y-3">
+            <p className="text-sm text-stone-600">
+              <Link
+                href={emissionsHref({ projectId })}
+                className="font-medium text-forest-700 hover:underline"
+              >
+                Open full emissions workspace →
+              </Link>
+              <span className="text-stone-400"> · guided pipeline, site rail, portfolio KPIs</span>
+            </p>
+            <ProjectEmissionsPanel
+              projectId={projectId}
+              projectCode={projectCode}
+              workAreas={workAreas}
+            />
+          </div>
         )}
 
         {section === "pest_intel" && showPestIntel && (

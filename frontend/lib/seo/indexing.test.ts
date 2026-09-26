@@ -23,6 +23,7 @@ const NOINDEX_PREFIXES = [
   "/field-ops",
   "/monitoring",
   "/portfolio-health",
+  "/emissions",
   "/bioacoustic",
   "/alerts",
   "/assistant",
