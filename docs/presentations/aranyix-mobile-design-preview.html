@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aranyix Mobile — Screen Design Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --forest: #166534;
+    --forest-dark: #14532d;
+    --forest-mid: #15803d;
+    --forest-light: #dcfce7;
+    --mint: #86efac;
+    --surface: #f4f7f4;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: rgba(15, 23, 42, 0.08);
+    --warn: #9a3412;
+    --warn-bg: #fff7ed;
+    --warn-border: #fdba74;
+    --gold: #b45309;
+    --sky: #0ea5e9;
+    --map: #c5d9c8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "DM Sans", system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(22, 101, 52, 0.18), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 90% 10%, rgba(180, 83, 9, 0.08), transparent 45%),
+      linear-gradient(180deg, #eef3ee 0%, #e2ebe3 100%);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  .page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+  header.hero {
+    margin-bottom: 48px;
+  }
+  header.hero .eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--forest);
+    margin-bottom: 12px;
+  }
+  header.hero h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--forest-dark);
+    line-height: 1.1;
+  }
+  header.hero p {
+    margin-top: 14px;
+    max-width: 560px;
+    font-size: 17px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 28px 0 40px;
+  }
+  .tabs button {
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(8px);
+    color: var(--muted);
+    font: 600 13px/1 "DM Sans", sans-serif;
+    padding: 10px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: 0.15s ease;
+  }
+  .tabs button:hover { border-color: var(--mint); color: var(--forest-dark); }
+  .tabs button.active {
+    background: var(--forest);
+    border-color: var(--forest);
+    color: #fff;
+  }
+  .section { display: none; }
+  .section.active { display: block; }
+  .section-intro {
+    margin-bottom: 28px;
+    padding: 18px 20px;
+    background: rgba(255,255,255,0.65);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    max-width: 720px;
+  }
+  .section-intro strong { color: var(--forest-dark); }
+  .section-intro p { color: var(--muted); font-size: 14px; line-height: 1.5; margin-top: 6px; }
+  .phones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 36px 28px;
+    justify-content: flex-start;
+  }
+  .phone-wrap { width: 300px; }
+  .phone-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--forest-dark);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .phone-label span.tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--forest-light);
+    color: var(--forest);
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+  .phone {
+    width: 300px;
+    height: 620px;
+    background: var(--surface);
+    border-radius: 36px;
+    border: 3px solid #1a2e1f;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.4) inset,
+      0 24px 48px rgba(15, 40, 20, 0.18);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .notch {
+    height: 28px;
+    background: #1a2e1f;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    flex-shrink: 0;
+    padding-bottom: 6px;
+  }
+  .notch-pill {
+    width: 88px;
+    height: 8px;
+    background: #0a1510;
+    border-radius: 8px;
+  }
+  .screen {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .status {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 18px 2px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .content { flex: 1; overflow: hidden; padding: 0 14px; position: relative; }
+  .nav {
+    height: 64px;
+    background: var(--card);
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 4px 6px;
+    flex-shrink: 0;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    width: 56px;
+  }
+  .nav-item.active { color: var(--forest); }
+  .nav-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    background: transparent;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+  }
+  .nav-item.active .nav-icon { background: var(--forest-light); }
+
+  /* shared UI bits */
+  .h-title {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--forest-dark);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .sub { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: var(--forest-light);
+    color: var(--forest);
+  }
+  .chip.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
+  .chip.live { background: #ecfdf5; color: #047857; }
+  .chip.est { background: #f1f5f9; color: #475569; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 12px;
+  }
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--forest);
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: none;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--forest);
+    border: 1px solid rgba(22,101,52,0.25);
+  }
+  .btn.secondary {
+    background: var(--forest-light);
+    color: var(--forest-dark);
+  }
+  .fab {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--forest);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 26px;
+    font-weight: 300;
+    box-shadow: 0 8px 20px rgba(22,101,52,0.35);
+    z-index: 5;
+  }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .metric {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 10px;
+  }
+  .metric .n {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--forest-dark);
+  }
+  .metric .l { font-size: 10px; color: var(--muted); margin-top: 2px; font-weight: 600; }
+
+  /* LOGIN */
+  .login-bg {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(20,83,45,0.55) 0%, rgba(20,83,45,0.92) 55%, #0f2a1a 100%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+      linear-gradient(135deg, #166534, #22c55e 80%);
+  }
+  .login-body {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 18px 24px;
+    color: #fff;
+  }
+  .login-brand {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 36px;
+    font-weight: 700;
+    margin-top: 48px;
+    letter-spacing: -0.03em;
+  }
+  .login-tag { opacity: 0.8; font-size: 13px; margin-top: 6px; margin-bottom: 36px; }
+  .field {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+  }
+  .login-note {
+    margin-top: auto;
+    font-size: 11px;
+    opacity: 0.7;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* MAP */
+  .map-area {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 30% 40%, #a8d4b0 0%, transparent 40%),
+      radial-gradient(circle at 70% 60%, #8fbf9a 0%, transparent 35%),
+      linear-gradient(160deg, #b8d4bc, #9cbc9f 40%, #7fa886);
+  }
+  .map-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .tree-dot {
+    position: absolute;
+    width: 10px; height: 10px;
+    background: var(--forest);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .polygon-preview {
+    position: absolute;
+    left: 18%; top: 28%;
+    width: 48%; height: 32%;
+    background: rgba(22,101,52,0.22);
+    border: 2px solid var(--forest);
+    clip-path: polygon(20% 10%, 90% 5%, 100% 70%, 55% 100%, 0% 75%);
+  }
+  .line-preview {
+    position: absolute;
+    left: 12%; top: 62%;
+    width: 70%; height: 3px;
+    background: var(--gold);
+    transform: rotate(-12deg);
+    border-radius: 2px;
+    box-shadow: 0 0 0 3px rgba(180,83,9,0.25);
+  }
+  .map-top {
+    position: relative;
+    z-index: 2;
+    padding: 8px 0 0;
+  }
+  .map-tools {
+    position: absolute;
+    z-index: 3;
+    right: 12px;
+    top: 70px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .tool {
+    width: 40px; height: 40px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .tool.on { background: var(--forest); color: #fff; border-color: var(--forest); }
+  .map-sheet {
+    position: absolute;
+    z-index: 4;
+    left: 10px; right: 10px; bottom: 12px;
+    background: #fff;
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  }
+
+  /* alerts list */
+  .alert-row {
+    display: flex;
+    gap: 10px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .alert-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .dot-high { background: #dc2626; }
+  .dot-med { background: #ea580c; }
+  .dot-low { background: #64748b; }
+
+  .legend {
+    margin-top: 56px;
+    padding: 20px 22px;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+  }
+  .legend h3 {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 18px;
+    color: var(--forest-dark);
+    margin-bottom: 8px;
+  }
+  .legend p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .legend ul { margin-top: 10px; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="eyebrow">Aranyix Mobile · Design Preview</div>
+      <h1>Role-based field app screens</h1>
+      <p>Click a role or flow below to review proposed screens before build. One login → different homes, nav, and primary actions.</p>
+    </header>
+
+    <div class="tabs" id="tabs">
+      <button class="active" data-tab="login">Login</button>
+      <button data-tab="field">Field worker</button>
+      <button data-tab="map">Map & draw</button>
+      <button data-tab="supervisor">Supervisor</button>
+      <button data-tab="exec">Exec dashboard</button>
+      <button data-tab="alerts">Alerts</button>
+    </div>
+
+    <!-- LOGIN -->
+    <section class="section active" id="login">
+      <div class="section-intro">
+        <strong>One login — no role picker</strong>
+        <p>Email/password (or invite). After auth, app opens the correct shell from platform role + org role. Role is never chosen by the user on this screen.</p>
+      </div>
+      <div class="phones">
+        <div class="phone-wrap">
+          <div class="phone-label">Login <span class="tag">Shared</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen">
+              <div class="login-bg"></div>
+              <div class="login-body">
+                <div class="status" style="color:#fff;opacity:.85"><span>9:41</span><span>●●●</span></div>
+                <div class="login-brand">Aranyix</div>
+                <div class="login-tag">Plantation field ops · India</div>
+                <div class="field">you@org.in</div>
+                <div class="field">••••••••</div>
+                <div class="btn" style="margin-top:8px">Sign in</div>
+                <div class="btn ghost" style="margin-top:8px;color:#fff;border-color:rgba(255,255,255,.3)">Forgot password?</div>
+                <div class="login-note">Your home screen is based on your org role.<br/>Field · Supervisor · Program lead</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone-label">Post-login routing <span class="tag">System</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen" style="padding:16px;background:var(--surface)">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div style="margin-top:24px" class="h-title">Welcome back</div>
+              <p class="sub" style="margin:8px 0 20px">Opening your workspace…</p>
+              <div class="card" style="margin-bottom:10px">
+                <div class="row" style="justify-content:space-between">
+                  <div>
+                    <div style="font-weight:700;font-size:13px">Ravi Kumar</div>
+                    <div class="sub">Green India Trust</div>
+                  </div>
+                  <span class="chip">Field worker</span>
+                </div>
+              </div>
+              <div class="card" style="opacity:.55;margin-bottom:10px">
+                <div class="row" style="justify-content:space-between">
+                  <div>
+                    <div style="font-weight:700;font-size:13px">Anita Desai</div>
+                    <div class="sub">Same org</div>
+                  </div>
+                  <span class="chip">Supervisor</span>
+                </div>
+              </div>
+              <div class="card" style="opacity:.35">
+                <div class="row" style="justify-content:space-between">
+                  <div>
+                    <div style="font-weight:700;font-size:13px">CSR Lead</div>
+                    <div class="sub">Corporate account</div>
+                  </div>
+                  <span class="chip">Manager</span>
+                </div>
+              </div>
+              <p class="sub" style="margin-top:28px;text-align:center">Same APK · different shell</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FIELD -->
+    <section class="section" id="field">
+      <div class="section-intro">
+        <strong>Field worker shell</strong>
+        <p>Job: register trees, sync offline, clear today’s alerts. Nav: Home · Trees · Map · Alerts. Add tree is always one tap (FAB + home CTA).</p>
+      </div>
+      <div class="phones">
+        <div class="phone-wrap">
+          <div class="phone-label">Field home <span class="tag">Worker</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="content" style="padding-top:8px">
+                <div class="row" style="justify-content:space-between;margin-bottom:14px">
+                  <div>
+                    <div class="sub">Good morning</div>
+                    <div class="h-title" style="font-size:20px">Ravi</div>
+                  </div>
+                  <span class="chip warn">2 offline</span>
+                </div>
+                <div class="btn" style="margin-bottom:12px">＋  Add tree</div>
+                <div class="row" style="margin-bottom:12px">
+                  <div class="metric"><div class="n">18</div><div class="l">Today</div></div>
+                  <div class="metric"><div class="n">142</div><div class="l">This week</div></div>
+                  <div class="metric"><div class="n">3</div><div class="l">Alerts</div></div>
+                </div>
+                <div style="font-size:12px;font-weight:700;margin:4px 0 8px;color:var(--forest-dark)">Needs attention</div>
+                <div class="card" style="margin-bottom:8px">
+                  <div class="row" style="justify-content:space-between">
+                    <div style="font-size:12px;font-weight:600">Survival check due</div>
+                    <span class="chip warn">High</span>
+                  </div>
+                  <div class="sub" style="margin-top:4px">Plot B · 12 trees · due today</div>
+                </div>
+                <div class="card">
+                  <div class="row" style="justify-content:space-between">
+                    <div style="font-size:12px;font-weight:600">Low NDVI cluster</div>
+                    <span class="chip">Med</span>
+                  </div>
+                  <div class="sub" style="margin-top:4px">Corridor C2 · open on map</div>
+                </div>
+              </div>
+              <div class="nav">
+                <div class="nav-item active"><div class="nav-icon">⌂</div>Home</div>
+                <div class="nav-item"><div class="nav-icon">🌳</div>Trees</div>
+                <div class="nav-item"><div class="nav-icon">◎</div>Map</div>
+                <div class="nav-item"><div class="nav-icon">🔔</div>Alerts</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone-label">Add tree <span class="tag">Core</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="content" style="padding-top:8px">
+                <div class="h-title" style="font-size:20px;margin-bottom:12px">Add tree</div>
+                <div style="height:120px;border-radius:16px;background:linear-gradient(145deg,#1a3d28,#2d6a45);display:grid;place-items:center;color:#fff;font-size:13px;font-weight:600;margin-bottom:12px">
+                  📷 Capture / upload photo
+                </div>
+                <div class="card" style="margin-bottom:8px">
+                  <div class="sub">GPS</div>
+                  <div style="font-size:13px;font-weight:700;margin-top:2px">19.0760° N, 72.8777° E</div>
+                  <div class="chip live" style="margin-top:6px">±4 m · Live</div>
+                </div>
+                <div class="card" style="margin-bottom:8px;font-size:12px;color:var(--muted)">Species · Teak ▾</div>
+                <div class="card" style="margin-bottom:8px;font-size:12px;color:var(--muted)">Program · CSR 2026 ▾</div>
+                <div class="card" style="margin-bottom:12px;font-size:12px;color:var(--muted)">Work area · Plot B ▾</div>
+                <div class="btn">Save tree</div>
+                <div class="btn ghost" style="margin-top:8px">Save offline</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone-label">Trees list <span class="tag">Worker</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="content" style="padding-top:8px;position:relative;height:100%">
+                <div class="row" style="justify-content:space-between;margin-bottom:12px">
+                  <div class="h-title" style="font-size:20px">Trees</div>
+                  <span class="chip">142</span>
+                </div>
+                <div class="card" style="margin-bottom:8px">
+                  <div class="row" style="justify-content:space-between">
+                    <div>
+                      <div style="font-size:13px;font-weight:700">Teak · #T-1042</div>
+                      <div class="sub">Plot B · 2h ago</div>
+                    </div>
+                    <span class="chip live">Live</span>
+                  </div>
+                </div>
+                <div class="card" style="margin-bottom:8px">
+                  <div class="row" style="justify-content:space-between">
+                    <div>
+                      <div style="font-size:13px;font-weight:700">Neem · #T-1041</div>
+                      <div class="sub">Plot B · yesterday</div>
+                    </div>
+                    <span class="chip est">Estimate</span>
+                  </div>
+                </div>
+                <div class="card" style="margin-bottom:8px">
+                  <div class="row" style="justify-content:space-between">
+                    <div>
+                      <div style="font-size:13px;font-weight:700">Bamboo · #T-1038</div>
+                      <div class="sub">Corridor C2</div>
+                    </div>
+                    <span class="chip warn">Check</span>
+                  </div>
+                </div>
+                <div class="fab">＋</div>
+              </div>
+              <div class="nav">
+                <div class="nav-item"><div class="nav-icon">⌂</div>Home</div>
+                <div class="nav-item active"><div class="nav-icon">🌳</div>Trees</div>
+                <div class="nav-item"><div class="nav-icon">◎</div>Map</div>
+                <div class="nav-item"><div class="nav-icon">🔔</div>Alerts</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAP -->
+    <section class="section" id="map">
+      <div class="section-intro">
+        <strong>Map · mark polygon &amp; linear</strong>
+        <p>View trees, draw plantation plots (polygon) or corridors/bunds (linear). Tools on the right; bottom sheet to name and save into work areas / fences APIs.</p>
+      </div>
+      <div class="phones">
+        <div class="phone-wrap">
+          <div class="phone-label">Map overview <span class="tag">All roles</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen" style="padding:0">
+              <div class="map-area">
+                <div class="map-grid"></div>
+                <div class="polygon-preview"></div>
+                <div class="line-preview"></div>
+                <div class="tree-dot" style="left:35%;top:36%"></div>
+                <div class="tree-dot" style="left:48%;top:42%"></div>
+                <div class="tree-dot" style="left:42%;top:50%"></div>
+                <div class="tree-dot" style="left:58%;top:38%"></div>
+                <div class="tree-dot" style="left:28%;top:68%"></div>
+                <div class="tree-dot" style="left:55%;top:66%"></div>
+              </div>
+              <div class="map-top" style="padding:8px 14px 0">
+                <div class="status" style="padding:0"><span>9:41</span><span>●●●</span></div>
+                <div class="card" style="margin-top:6px;padding:10px 12px">
+                  <div style="font-size:13px;font-weight:700">Site · Vasai East</div>
+                  <div class="sub">6 trees · 1 plot · 1 corridor</div>
+                </div>
+              </div>
+              <div class="map-tools">
+                <div class="tool">＋</div>
+                <div class="tool">⬡</div>
+                <div class="tool">╱</div>
+                <div class="tool">◎</div>
+              </div>
+              <div class="map-sheet">
+                <div class="row" style="justify-content:space-between;margin-bottom:8px">
+                  <div style="font-size:13px;font-weight:700">Plot B</div>
+                  <span class="chip">Polygon</span>
+                </div>
+                <div class="sub">42 trees · survival 86%</div>
+                <div class="row" style="margin-top:10px">
+                  <div class="btn" style="flex:1;padding:10px">Open</div>
+                  <div class="btn secondary" style="flex:1;padding:10px">Add tree</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone-label">Draw polygon <span class="tag">New</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen" style="padding:0">
+              <div class="map-area">
+                <div class="map-grid"></div>
+                <div class="polygon-preview" style="border-style:dashed;background:rgba(22,101,52,0.3)"></div>
+                <div class="tree-dot" style="left:40%;top:40%;width:14px;height:14px;background:#fff;border-color:var(--forest)"></div>
+                <div class="tree-dot" style="left:62%;top:32%;width:14px;height:14px;background:#fff;border-color:var(--forest)"></div>
+                <div class="tree-dot" style="left:68%;top:55%;width:14px;height:14px;background:#fff;border-color:var(--forest)"></div>
+              </div>
+              <div class="map-top" style="padding:8px 14px 0">
+                <div class="status" style="padding:0"><span>9:41</span><span>●●●</span></div>
+                <div class="chip" style="margin-top:8px">Drawing plot · tap corners</div>
+              </div>
+              <div class="map-tools">
+                <div class="tool on">⬡</div>
+                <div class="tool">╱</div>
+                <div class="tool">↩</div>
+              </div>
+              <div class="map-sheet">
+                <div style="font-size:13px;font-weight:700;margin-bottom:6px">New work area</div>
+                <div class="card" style="padding:10px;margin-bottom:8px;font-size:12px;color:var(--muted);background:var(--surface)">Name · Plot C</div>
+                <div class="row">
+                  <div class="btn ghost" style="flex:1;padding:10px">Cancel</div>
+                  <div class="btn" style="flex:1;padding:10px">Save polygon</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone-label">Draw linear / corridor <span class="tag">New</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen" style="padding:0">
+              <div class="map-area">
+                <div class="map-grid"></div>
+                <div class="line-preview" style="top:45%;width:78%;left:8%;height:4px;transform:rotate(-18deg)"></div>
+                <div class="tree-dot" style="left:18%;top:48%;width:12px;height:12px;background:var(--gold);border-color:#fff"></div>
+                <div class="tree-dot" style="left:45%;top:40%;width:12px;height:12px;background:var(--gold);border-color:#fff"></div>
+                <div class="tree-dot" style="left:72%;top:32%;width:12px;height:12px;background:var(--gold);border-color:#fff"></div>
+              </div>
+              <div class="map-top" style="padding:8px 14px 0">
+                <div class="status" style="padding:0"><span>9:41</span><span>●●●</span></div>
+                <div class="chip" style="margin-top:8px;background:var(--warn-bg);color:var(--warn)">Drawing corridor · tap path</div>
+              </div>
+              <div class="map-tools">
+                <div class="tool">⬡</div>
+                <div class="tool on" style="background:var(--gold);border-color:var(--gold)">╱</div>
+                <div class="tool">↩</div>
+              </div>
+              <div class="map-sheet">
+                <div class="row" style="justify-content:space-between;margin-bottom:6px">
+                  <div style="font-size:13px;font-weight:700">Roadside belt</div>
+                  <span class="chip" style="background:var(--warn-bg);color:var(--warn)">Linear</span>
+                </div>
+                <div class="sub" style="margin-bottom:10px">Width buffer 8 m · 3 vertices</div>
+                <div class="btn">Save corridor</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUPERVISOR -->
+    <section class="section" id="supervisor">
+      <div class="section-intro">
+        <strong>Supervisor shell</strong>
+        <p>Job: “what’s wrong today?” Map + alerts first. Crew progress, survival due, satellite hotspots. Can still add trees and draw areas.</p>
+      </div>
+      <div class="phones">
+        <div class="phone-wrap">
+          <div class="phone-label">Supervisor home <span class="tag">Supervisor</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="content" style="padding-top:8px">
+                <div class="h-title" style="font-size:20px">Crew overview</div>
+                <p class="sub" style="margin:4px 0 12px">Vasai cluster · today</p>
+                <div class="row" style="margin-bottom:12px">
+                  <div class="metric"><div class="n">4</div><div class="l">Workers</div></div>
+                  <div class="metric"><div class="n">67</div><div class="l">Trees in</div></div>
+                  <div class="metric"><div class="n">5</div><div class="l">Open alerts</div></div>
+                </div>
+                <div class="card" style="margin-bottom:8px;background:var(--warn-bg);border-color:var(--warn-border)">
+                  <div style="font-size:12px;font-weight:700;color:var(--warn)">Priority</div>
+                  <div style="font-size:13px;font-weight:600;margin-top:4px">Plot A survival overdue</div>
+                  <div class="sub">18 trees · assigned to Meera</div>
+                </div>
+                <div class="card" style="margin-bottom:8px">
+                  <div style="font-size:12px;font-weight:700">Hotspot on map</div>
+                  <div class="sub" style="margin-top:4px">NDVI drop · Corridor C2</div>
+                </div>
+                <div class="row" style="margin-top:8px">
+                  <div class="btn" style="flex:1;padding:10px;font-size:12px">Open map</div>
+                  <div class="btn secondary" style="flex:1;padding:10px;font-size:12px">Alerts</div>
+                </div>
+              </div>
+              <div class="nav">
+                <div class="nav-item active"><div class="nav-icon">⌂</div>Home</div>
+                <div class="nav-item"><div class="nav-icon">◎</div>Map</div>
+                <div class="nav-item"><div class="nav-icon">🔔</div>Alerts</div>
+                <div class="nav-item"><div class="nav-icon">🌳</div>Trees</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone-label">Monitoring slice <span class="tag">Supervisor</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="content" style="padding-top:8px">
+                <div class="h-title" style="font-size:20px">Monitoring</div>
+                <p class="sub" style="margin:4px 0 14px">Survival · satellite · fences</p>
+                <div class="card" style="margin-bottom:8px">
+                  <div class="row" style="justify-content:space-between">
+                    <div style="font-size:12px;font-weight:700">Survival due</div>
+                    <div style="font-family:Fraunces,serif;font-size:20px;color:var(--warn)">12</div>
+                  </div>
+                  <div style="height:6px;background:#fee2e2;border-radius:4px;margin-top:8px">
+                    <div style="width:65%;height:100%;background:#ea580c;border-radius:4px"></div>
+                  </div>
+                </div>
+                <div class="card" style="margin-bottom:8px">
+                  <div class="row" style="justify-content:space-between">
+                    <div style="font-size:12px;font-weight:700">Health flags</div>
+                    <div style="font-family:Fraunces,serif;font-size:20px;color:var(--forest)">3</div>
+                  </div>
+                  <div class="sub" style="margin-top:4px">Satellite NDVI · last 7 days</div>
+                </div>
+                <div class="card">
+                  <div class="row" style="justify-content:space-between">
+                    <div style="font-size:12px;font-weight:700">Fence / boundary</div>
+                    <div style="font-family:Fraunces,serif;font-size:20px">0</div>
+                  </div>
+                  <div class="sub" style="margin-top:4px">No breaches</div>
+                </div>
+              </div>
+              <div class="nav">
+                <div class="nav-item"><div class="nav-icon">⌂</div>Home</div>
+                <div class="nav-item active"><div class="nav-icon">◎</div>Map</div>
+                <div class="nav-item"><div class="nav-icon">🔔</div>Alerts</div>
+                <div class="nav-item"><div class="nav-icon">🌳</div>Trees</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXEC -->
+    <section class="section" id="exec">
+      <div class="section-intro">
+        <strong>Program / exec shell</strong>
+        <p>Read-heavy: portfolio health, KPIs, projects, alerts. No drawing tools unless elevated. Matches CSR / NGO / government managers.</p>
+      </div>
+      <div class="phones">
+        <div class="phone-wrap">
+          <div class="phone-label">Exec dashboard <span class="tag">Manager</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="content" style="padding-top:8px">
+                <div class="h-title" style="font-size:20px">Portfolio</div>
+                <p class="sub" style="margin:4px 0 12px">Green India Trust · Q2</p>
+                <div style="background:linear-gradient(135deg,var(--forest-dark),var(--forest-mid));border-radius:18px;padding:14px;color:#fff;margin-bottom:12px">
+                  <div style="font-size:11px;opacity:.8;font-weight:600">Forest health</div>
+                  <div style="font-family:Fraunces,serif;font-size:32px;font-weight:600;margin:4px 0">78</div>
+                  <div style="font-size:11px;opacity:.85">Stable · 3 sites need attention</div>
+                </div>
+                <div class="row" style="margin-bottom:10px">
+                  <div class="metric"><div class="n">12.4k</div><div class="l">Trees</div></div>
+                  <div class="metric"><div class="n">86%</div><div class="l">Survival</div></div>
+                </div>
+                <div class="card" style="margin-bottom:8px">
+                  <div style="font-size:12px;font-weight:700">AI brief</div>
+                  <div class="sub" style="margin-top:4px">Corridor C2 NDVI soft week-over-week. Recommend field check before CSR visit.</div>
+                </div>
+                <div class="card">
+                  <div class="row" style="justify-content:space-between">
+                    <div style="font-size:12px;font-weight:700">Live vs Estimate</div>
+                    <span class="chip live">Honest labels on</span>
+                  </div>
+                </div>
+              </div>
+              <div class="nav">
+                <div class="nav-item active"><div class="nav-icon">⌂</div>Home</div>
+                <div class="nav-item"><div class="nav-icon">◉</div>Monitor</div>
+                <div class="nav-item"><div class="nav-icon">📁</div>Projects</div>
+                <div class="nav-item"><div class="nav-icon">🔔</div>Alerts</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone-label">Projects <span class="tag">Manager</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="content" style="padding-top:8px">
+                <div class="h-title" style="font-size:20px;margin-bottom:12px">Projects</div>
+                <div class="card" style="margin-bottom:8px">
+                  <div style="font-size:13px;font-weight:700">Vasai East CSR</div>
+                  <div class="sub" style="margin-top:4px">4,200 trees · survival 88%</div>
+                  <div style="height:5px;background:var(--forest-light);border-radius:4px;margin-top:8px">
+                    <div style="width:88%;height:100%;background:var(--forest);border-radius:4px"></div>
+                  </div>
+                </div>
+                <div class="card" style="margin-bottom:8px">
+                  <div style="font-size:13px;font-weight:700">Palghar Belt</div>
+                  <div class="sub" style="margin-top:4px">1,100 trees · survival 79%</div>
+                  <div style="height:5px;background:var(--forest-light);border-radius:4px;margin-top:8px">
+                    <div style="width:79%;height:100%;background:var(--forest-mid);border-radius:4px"></div>
+                  </div>
+                </div>
+                <div class="card">
+                  <div style="font-size:13px;font-weight:700">School yards · Thane</div>
+                  <div class="sub" style="margin-top:4px">640 trees · onboarding</div>
+                </div>
+              </div>
+              <div class="nav">
+                <div class="nav-item"><div class="nav-icon">⌂</div>Home</div>
+                <div class="nav-item"><div class="nav-icon">◉</div>Monitor</div>
+                <div class="nav-item active"><div class="nav-icon">📁</div>Projects</div>
+                <div class="nav-item"><div class="nav-icon">🔔</div>Alerts</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ALERTS -->
+    <section class="section" id="alerts">
+      <div class="section-intro">
+        <strong>Alerts &amp; monitoring inbox</strong>
+        <p>Shared component, filtered by role scope. Tap opens tree, map hotspot, or work area. Priority first.</p>
+      </div>
+      <div class="phones">
+        <div class="phone-wrap">
+          <div class="phone-label">Alerts inbox <span class="tag">Shared</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="content" style="padding-top:8px">
+                <div class="row" style="justify-content:space-between;margin-bottom:12px">
+                  <div class="h-title" style="font-size:20px">Alerts</div>
+                  <span class="chip warn">5 open</span>
+                </div>
+                <div class="row" style="gap:6px;margin-bottom:10px">
+                  <span class="chip">All</span>
+                  <span class="chip" style="background:#fff;border:1px solid var(--line);color:var(--muted)">Survival</span>
+                  <span class="chip" style="background:#fff;border:1px solid var(--line);color:var(--muted)">Satellite</span>
+                </div>
+                <div class="alert-row">
+                  <div class="alert-dot dot-high"></div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700">Survival overdue · Plot A</div>
+                    <div class="sub">18 trees · 2 days late</div>
+                  </div>
+                </div>
+                <div class="alert-row">
+                  <div class="alert-dot dot-high"></div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700">NDVI drop · Corridor C2</div>
+                    <div class="sub">Satellite · open on map</div>
+                  </div>
+                </div>
+                <div class="alert-row">
+                  <div class="alert-dot dot-med"></div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700">Offline queue pending</div>
+                    <div class="sub">Ravi · 2 trees unsynced</div>
+                  </div>
+                </div>
+                <div class="alert-row" style="border:none">
+                  <div class="alert-dot dot-low"></div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700">New program invite</div>
+                    <div class="sub">CSR 2026 · view only</div>
+                  </div>
+                </div>
+              </div>
+              <div class="nav">
+                <div class="nav-item"><div class="nav-icon">⌂</div>Home</div>
+                <div class="nav-item"><div class="nav-icon">◎</div>Map</div>
+                <div class="nav-item active"><div class="nav-icon">🔔</div>Alerts</div>
+                <div class="nav-item"><div class="nav-icon">🌳</div>Trees</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone-label">Alert → action <span class="tag">Flow</span></div>
+          <div class="phone">
+            <div class="notch"><div class="notch-pill"></div></div>
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="content" style="padding-top:8px">
+                <div class="chip warn" style="margin-bottom:10px">High · Survival</div>
+                <div class="h-title" style="font-size:20px">Plot A check due</div>
+                <p class="sub" style="margin:8px 0 14px">18 trees need survival visit. Assigned to field crew.</p>
+                <div class="card" style="margin-bottom:8px">
+                  <div class="sub">Work area</div>
+                  <div style="font-size:13px;font-weight:700;margin-top:2px">Plot A · Vasai East</div>
+                </div>
+                <div class="card" style="margin-bottom:14px">
+                  <div class="sub">Suggested action</div>
+                  <div style="font-size:13px;font-weight:700;margin-top:2px">Open map · start checks</div>
+                </div>
+                <div class="btn">Open on map</div>
+                <div class="btn secondary" style="margin-top:8px">Mark as in progress</div>
+                <div class="btn ghost" style="margin-top:8px">Dismiss</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="legend">
+      <h3>Design notes</h3>
+      <p>Palette matches current Flutter theme (forest green, soft surface, Live/Estimate honesty chips). Typography: Fraunces for titles, DM Sans for UI.</p>
+      <ul>
+        <li><strong>Login</strong> — shared; role comes from backend after sign-in</li>
+        <li><strong>Field</strong> — Add tree dominant; Map + Alerts in tab bar</li>
+        <li><strong>Map</strong> — polygon + linear tools; save to work areas</li>
+        <li><strong>Supervisor</strong> — crew + priority monitoring</li>
+        <li><strong>Exec</strong> — portfolio KPIs, projects, read-heavy</li>
+      </ul>
+      <p style="margin-top:12px">Open this file in a browser and use the tabs. Tell me which screens to adjust before we build.</p>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tabs button');
+    const sections = document.querySelectorAll('.section');
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabs.forEach(b => b.classList.remove('active'));
+        sections.forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
