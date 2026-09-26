@@ -9,6 +9,7 @@ import {
   BarChart3,
   Bell,
   ChevronDown,
+  Cloud,
   CloudOff,
   FileText,
   ClipboardList,
@@ -113,6 +114,14 @@ const NAV_GROUPS: NavGroup[] = [
         icon: Activity,
         audience: ["professional", "field_supervisor"],
         exact: true,
+        featureFlag: "satellite",
+      },
+      {
+        href: "/emissions",
+        labelKey: "emissions",
+        hintKey: "emissionsHint",
+        icon: Cloud,
+        audience: ["professional", "field_supervisor"],
         featureFlag: "satellite",
       },
       {

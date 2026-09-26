@@ -4834,6 +4834,41 @@ export const reporting = {
   },
 };
 
+export type EmissionsPortfolioSite = {
+  project_id: string;
+  project_code: string;
+  project_name: string;
+  scheme_code: string | null;
+  work_area_id: string;
+  work_area_name: string;
+  active_source_count: number;
+  ch4_source_count: number;
+  has_dispersion: boolean;
+  has_tropomi_scan: boolean;
+  anomaly_ppb: number | null;
+  alignment_score: number | null;
+  verdict: string | null;
+  fusion_at: string | null;
+  scan_at: string | null;
+};
+
+export type EmissionsPortfolioSummary = {
+  tropomi_configured: boolean;
+  kpis: {
+    monitored_sites: number;
+    misaligned_sites: number;
+    strong_anomaly_sites: number;
+    ch4_active_sources: number;
+  };
+  sites: EmissionsPortfolioSite[];
+};
+
+export const emissionsPortfolio = {
+  async summary() {
+    return (await api.get<EmissionsPortfolioSummary>("/v1/emissions/portfolio-summary")).data;
+  },
+};
+
 export type ChecklistCode =
   | "verra_vm0047"
   | "gold_standard_luf"

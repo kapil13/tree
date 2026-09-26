@@ -21,6 +21,7 @@ from app.models.tree import Tree
 from app.models.user import User
 from app.scripts.seed_helpers import ensure_scheme_matrix, seed_workflow_fixtures
 from app.services.carbon.species_catalog import SPECIES_CATALOG
+from app.services.emissions.demo_seed import DEMO_GHG_PROJECT_CODE, ensure_demo_ghg_workspace
 from app.services.planting_programs.catalog import default_program_code
 from app.services.planting_programs.enrollment import get_program_by_code, set_user_programs
 
@@ -383,6 +384,7 @@ async def seed() -> None:
             citizen=citizen,
             projects=projects,
         )
+        ghg_stats = await ensure_demo_ghg_workspace(db, org=org, manager=manager)
 
         await db.commit()
         print(
@@ -397,6 +399,8 @@ async def seed() -> None:
             f"  Verifier: {DEMO_VERIFIER_EMAIL}\n"
             f"  Scheme demo projects: {len(projects)} (13-scheme matrix)\n"
             f"  Workflow fixtures: {workflow_stats}\n"
+            f"  GHG showcase: {DEMO_GHG_PROJECT_CODE} "
+            f"(project_id={ghg_stats.get('project_id', 'n/a')})\n"
             f"  Rebalance: detached {stats['citizen_detached_from_org']} citizen trees from org, "
             f"created {stats['citizen_created']} citizen + {stats['org_created']} org trees"
         )

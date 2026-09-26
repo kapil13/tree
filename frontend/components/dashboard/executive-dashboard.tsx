@@ -57,6 +57,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { OperationalStatusBar } from "@/components/ui";
 import { RadialGauge } from "@/components/dashboard/radial-gauge";
 import { AuditPortfolioStrip } from "@/components/audit/audit-portfolio-strip";
+import { EmissionsDashboardStrip } from "@/components/dashboard/emissions-dashboard-strip";
 import { ThreatWatchPanel } from "@/components/dashboard/threat-watch-panel";
 import {
   SarIntelligencePanel,
@@ -815,6 +816,8 @@ export function ExecutiveDashboard() {
       />
 
       <AuditPortfolioStrip />
+
+      <EmissionsDashboardStrip />
 
       {showPlantingFocus ? (
         <CommandCenterEvidence title={te("plantingFocus")} description={te("plantingFocusDesc")}>

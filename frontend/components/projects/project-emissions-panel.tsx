@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Cloud, Download, GitMerge, Satellite, Wind } from "lucide-react";
 import { downloadBlob } from "@/lib/download-blob";
 import { EmissionsPlumeMap } from "@/components/projects/emissions-plume-map";
+import { EmissionsGuidedPipeline } from "@/components/emissions/emissions-guided-pipeline";
+import { EmissionsTropomiChart } from "@/components/emissions/emissions-tropomi-chart";
 import { AlertPreparednessBlock } from "@/components/alerts/alert-preparedness-block";
 import { interpretEmissionFusionClient } from "@/lib/alert-preparedness";
 import {
@@ -137,13 +139,26 @@ export function ProjectEmissionsPanel({
   projectId,
   projectCode,
   workAreas,
+  controlledWorkAreaId,
+  onWorkAreaChange,
+  showGuidedPipeline = false,
+  showTropomiChart = false,
 }: {
   projectId: string;
   projectCode?: string;
   workAreas: WorkArea[];
+  controlledWorkAreaId?: string | null;
+  onWorkAreaChange?: (workAreaId: string) => void;
+  showGuidedPipeline?: boolean;
+  showTropomiChart?: boolean;
 }) {
   const qc = useQueryClient();
-  const [workAreaId, setWorkAreaId] = useState(workAreas[0]?.id ?? "");
+  const [internalWorkAreaId, setInternalWorkAreaId] = useState(workAreas[0]?.id ?? "");
+  const workAreaId = controlledWorkAreaId ?? internalWorkAreaId;
+  const setWorkAreaId = (id: string) => {
+    onWorkAreaChange?.(id);
+    if (controlledWorkAreaId === undefined) setInternalWorkAreaId(id);
+  };
   const [gasType, setGasType] = useState("CH4");
   const [sourceType, setSourceType] = useState("landfill");
   const [name, setName] = useState("");
@@ -207,6 +222,15 @@ export function ProjectEmissionsPanel({
       setPlumeGas(gasesInRegistry.includes("CH4") ? "CH4" : gasesInRegistry[0]);
     }
   }, [gasesInRegistry, plumeGas]);
+
+  useEffect(() => {
+    if (controlledWorkAreaId && workAreas.some((a) => a.id === controlledWorkAreaId)) {
+      return;
+    }
+    if (!workAreaId && workAreas[0]?.id) {
+      setWorkAreaId(workAreas[0].id);
+    }
+  }, [controlledWorkAreaId, workAreaId, workAreas]);
 
   const { data: latestPlume } = useQuery({
     queryKey: ["dispersion-latest", projectId, workAreaId],
@@ -333,6 +357,59 @@ export function ProjectEmissionsPanel({
     },
   });
 
+  const ch4Sources = useMemo(
+    () => sources.filter((s) => s.gas_type === "CH4" && s.status === "active"),
+    [sources],
+  );
+
+  const pipelineSteps = [
+    {
+      id: "register" as const,
+      label: "Register sources",
+      detail:
+        ch4Sources.length > 0
+          ? `${ch4Sources.length} active CH₄ source${ch4Sources.length === 1 ? "" : "s"}`
+          : "Add at least one CH₄ point source inside the work area",
+      done: ch4Sources.length > 0,
+      active: ch4Sources.length === 0,
+    },
+    {
+      id: "model" as const,
+      label: "Model plume",
+      detail: plumeResult ? "Dispersion simulation saved" : "Run Gaussian plume with local wind",
+      done: Boolean(plumeResult),
+      active: ch4Sources.length > 0 && !plumeResult,
+      disabled: ch4Sources.length === 0,
+      onAction: () => runMut.mutate(),
+      actionLabel: "Run dispersion",
+      busy: runMut.isPending,
+    },
+    {
+      id: "scan" as const,
+      label: "TROPOMI CH₄ scan",
+      detail: tropomiScan ? "Satellite ROI series loaded" : "Screen methane anomaly over the work area",
+      done: Boolean(tropomiScan),
+      active: Boolean(plumeResult) && !tropomiScan,
+      disabled: ch4Sources.length === 0,
+      onAction: () => scanMut.mutate(),
+      actionLabel: "Run scan",
+      busy: scanMut.isPending,
+    },
+    {
+      id: "fuse" as const,
+      label: "Fusion assessment",
+      detail: fusionResult
+        ? `Verdict: ${VERDICT_LABEL[fusionResult.verdict] ?? fusionResult.verdict}`
+        : "Compare satellite anomaly with declared sources",
+      done: Boolean(fusionResult),
+      active: Boolean(plumeResult && tropomiScan) && !fusionResult,
+      disabled: !canRunFusion,
+      onAction: () => fusionMut.mutate(),
+      actionLabel: "Run fusion",
+      busy: fusionMut.isPending,
+    },
+  ];
+
   if (workAreas.length === 0) {
     return (
       <div className="card text-sm text-stone-600">
@@ -354,6 +431,8 @@ export function ProjectEmissionsPanel({
           </p>
         </div>
       </div>
+
+      {showGuidedPipeline ? <EmissionsGuidedPipeline steps={pipelineSteps} /> : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div>
@@ -631,6 +710,22 @@ export function ProjectEmissionsPanel({
               Downwind reach modeled: {plumeResult.downwind_km} km (may extend outside work area)
             </li>
           </ul>
+        </div>
+      ) : null}
+
+      {showTropomiChart && tropomiScan?.series?.length ? (
+        <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4">
+          <p className="text-sm font-semibold text-sky-900">TROPOMI CH₄ time series</p>
+          <div className="mt-2">
+            <EmissionsTropomiChart
+              series={(tropomiScan.series as Array<{ time: string; mean_ppb: number }>) ?? []}
+            />
+          </div>
+          {(tropomiScan.summary as { demo_stub?: boolean })?.demo_stub ? (
+            <p className="mt-2 text-xs text-amber-800">
+              Illustrative demo series — configure Sentinel Hub for live TROPOMI pulls.
+            </p>
+          ) : null}
         </div>
       ) : null}
 

@@ -2,6 +2,7 @@ export const PORTFOLIO_HEALTH_TAB_IDS = [
   "overview",
   "audit",
   "compliance",
+  "emissions",
   "threats",
   "monitoring",
   "biodiversity",
@@ -33,6 +34,10 @@ export function portfolioAuditHref(projectId?: string | null): string {
 
 export function portfolioComplianceHref(projectId?: string | null): string {
   return portfolioHealthHref("compliance", { projectId });
+}
+
+export function portfolioEmissionsHref(projectId?: string | null): string {
+  return portfolioHealthHref("emissions", { projectId });
 }
 
 export function portfolioMonitoringHref(projectId?: string | null): string {
