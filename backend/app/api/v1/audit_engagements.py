@@ -1748,6 +1748,19 @@ async def create_audit_export(
             detail={"code": exc.code, "blocked_integrations": exc.blocked},
         ) from exc
 
+    from app.services.idempotency.keys import (
+        payload_fingerprint,
+        resolve_idempotency,
+        store_idempotency,
+    )
+
+    fingerprint = payload_fingerprint({"engagement_id": str(engagement_id)})
+    cached = await resolve_idempotency(
+        request, scope="audit.export.create", payload_fingerprint=fingerprint
+    )
+    if cached is not None:
+        return AuditExportCreateOut.model_validate(cached)
+
     try:
         _zip_bytes, summary, signature = await build_audit_engagement_bundle(
             db,
@@ -1768,7 +1781,7 @@ async def create_audit_export(
         diff=summary,
     )
     await db.commit()
-    return AuditExportCreateOut(
+    export_out = AuditExportCreateOut(
         export_id=summary["export_id"],
         cycle_id=summary["cycle_id"],
         engagement_id=summary["engagement_id"],
@@ -1781,6 +1794,14 @@ async def create_audit_export(
         signature_key_id=summary.get("signature_key_id"),
         status=summary["status"],
     )
+    await store_idempotency(
+        request,
+        scope="audit.export.create",
+        payload_fingerprint=fingerprint,
+        status_code=status.HTTP_201_CREATED,
+        body=export_out.model_dump(mode="json"),
+    )
+    return export_out
 
 
 @router.get("/{engagement_id}/export")

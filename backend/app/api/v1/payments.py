@@ -51,8 +51,26 @@ async def payment_catalog() -> PaymentCatalogOut:
 
 @router.post("/orders", response_model=PaymentCheckoutOut, status_code=status.HTTP_201_CREATED)
 async def create_checkout_order(
-    payload: PaymentOrderCreate, user: CurrentUser, db: DB
+    payload: PaymentOrderCreate,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
 ) -> PaymentCheckoutOut:
+    from app.services.idempotency.keys import (
+        payload_fingerprint,
+        resolve_idempotency,
+        store_idempotency,
+    )
+
+    fingerprint = payload_fingerprint(
+        {"sku": payload.sku, "user_id": str(user.id)},
+    )
+    cached = await resolve_idempotency(
+        request, scope="payments.orders", payload_fingerprint=fingerprint
+    )
+    if cached is not None:
+        return PaymentCheckoutOut.model_validate(cached)
+
     if not payments_enabled():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="payments_not_configured")
     await assert_org_feature_enabled(db, user, "payments")
@@ -74,7 +92,7 @@ async def create_checkout_order(
     if not key_id:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="payments_not_configured")
 
-    return PaymentCheckoutOut(
+    checkout = PaymentCheckoutOut(
         order=PaymentOrderOut.model_validate(order),
         razorpay_key_id=key_id,
         amount_paise=order.amount_paise,
@@ -82,6 +100,14 @@ async def create_checkout_order(
         credits=order.credits_granted,
         label=pack.label,
     )
+    await store_idempotency(
+        request,
+        scope="payments.orders",
+        payload_fingerprint=fingerprint,
+        status_code=status.HTTP_201_CREATED,
+        body=checkout.model_dump(mode="json"),
+    )
+    return checkout
 
 
 @router.post("/verify", response_model=PaymentOrderOut)

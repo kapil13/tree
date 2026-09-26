@@ -12,6 +12,7 @@ import { Iso14064ExportPanel } from "@/components/reports/iso14064-export-panel"
 import { Iso14064OrgExportPanel } from "@/components/reports/iso14064-org-export-panel";
 import { ProjectFrameworkExportPanel } from "@/components/reports/project-framework-export-panel";
 import { SbtiFlagExportPanel } from "@/components/reports/sbti-flag-export-panel";
+import { StacExportPanel } from "@/components/reports/stac-export-panel";
 import { reportsOperationalStatus } from "@/components/dashboard/command-center-shell";
 import { fmtNum } from "@/components/dashboard/format";
 import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader, SectionNav } from "@/components/ui";
@@ -155,10 +156,10 @@ export default function ReportsPage() {
               : id === "etfHandoff"
                 ? tr("etfHandoffTab")
                 : id === "sbtiFlag"
-                  ? "SBTi FLAG"
+                  ? tr("sbtiFlagTab")
                   : id === "gbf"
-                    ? "GBF"
-                    : "ISO 14064-1",
+                    ? tr("gbfTab")
+                    : tr("iso14064OrgTab"),
   }));
 
   async function queue() {
@@ -437,6 +438,8 @@ export default function ReportsPage() {
       </div>
         </>
       )}
+
+      <StacExportPanel />
     </div>
   );
 }

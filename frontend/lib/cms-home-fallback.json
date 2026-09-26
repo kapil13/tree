@@ -135,11 +135,11 @@
           },
           {
             "label": "VM0047 checklists",
-            "href": "/#compliance"
+            "href": "/reports"
           },
           {
             "label": "Audit evidence chain",
-            "href": "/#compliance"
+            "href": "/reports"
           }
         ]
       },
@@ -205,7 +205,7 @@
           },
           {
             "value": "8",
-            "label": "Indian languages"
+            "label": "Languages shipped (EN + HI)"
           },
           {
             "value": "SAR + NDVI",
@@ -281,7 +281,7 @@
           {
             "icon": "Satellite",
             "title": "Satellite & SAR fusion",
-            "description": "Sentinel NDVI health layers plus SAR integrity trends, fence validation, and portfolio threat dashboards.",
+            "description": "Sentinel NDVI health layers plus SAR integrity trends when live credentials are configured; otherwise the app shows stub or estimate modes with an integration honesty banner — never silent fallback.",
             "accent": "from-sky-500/15 to-sky-900/5"
           },
           {
@@ -510,7 +510,7 @@
             "icon": "Languages",
             "code": "WCAG + i18n",
             "title": "Inclusive by design",
-            "description": "Hindi plus seven Indian languages on web; WCAG-tested core routes."
+            "description": "English and Hindi on web and mobile today; additional Indian languages on the roadmap. WCAG-tested core routes."
           },
           {
             "icon": "Sparkles",

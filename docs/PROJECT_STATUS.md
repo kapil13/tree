@@ -1,52 +1,27 @@
 # Aranyix / BYOT — Project Status
 
-Last updated after Phase 2 (field ops), Phase 3 (monitoring), and CI stabilization.
+Last updated: Phase I (launch quality & marketing truth).
+
+See also: `IMPLEMENTED.md` (shipped) and `TARGET_ARCHITECTURE.md` (roadmap).
 
 ## Production checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Phase 2 field ops | On `main` | `/field-ops`, mobile projects, offline sync, contractors |
-| Phase 3 monitoring | On `main` | `/monitoring`, Celery jobs, `/health/workers` |
-| CI (lint + tests) | Green | PRs #48–#50, #49 |
-| VPS deploy | **You must run** | `infrastructure/hostinger/deploy.sh` after each `git pull` |
-| Migration head | `0012_monitoring_job_runs` | `alembic upgrade head` (now in `deploy.sh`) |
-| Celery worker + beat | Required | Monthly satellite + daily health roundup |
-| Mobile APK | **Build when ready** | Executive home + field projects need new APK |
+| Web dashboard + API | Shipped | Next.js 15 + FastAPI |
+| Mobile field app | Shipped | Flutter; APK workflow in CI |
+| CI | Green | Backend lint/tests, frontend typecheck/build, Playwright API smoke, Android APK |
+| Migration head | `0088_phase_h_integration_ops` | 88 Alembic revisions — run `alembic upgrade head` |
+| Integrations honesty | Shipped | Global strip; export gates when stub |
+| i18n (web + mobile) | **en + hi** | Marketing copy aligned; not 8 languages yet |
+| RLS | Partial | `0087_platform_rls_policies` on selected tables |
 
 ### Verify production
 
 ```bash
 curl -s https://api.aranyix.tech/health | python3 -m json.tool
-curl -s https://api.aranyix.tech/health/workers | python3 -m json.tool
-curl -s https://api.aranyix.tech/openapi.json | grep -E 'monitoring-summary|health/workers'
+curl -s https://api.aranyix.tech/health/synthetic | python3 -m json.tool
 ```
-
----
-
-## Open PR cleanup (close manually)
-
-These draft PRs are **already merged into `main`** or **superseded**. Close them in GitHub to reduce noise:
-
-| PR | Action | Reason |
-|----|--------|--------|
-| #9–#15 | Close | Superseded (photos, login, OTP, Sentinel, Postgres port) |
-| #23–#27, #29–#35 | Close | Bioacoustic stack merged to `main` |
-| #37 | Close | Stale; would revert Phase 2/3 if merged |
-| #28 | Close after #51 merges | Rebased mobile executive dashboard |
-
-Keep only new work as fresh PRs targeting `main`.
-
----
-
-## What's next (product)
-
-1. **VPS** — `git pull && ./deploy.sh` on production
-2. **Mobile APK** — ship for field teams (Phase 2 + executive home)
-3. **Observe** — `/monitoring` for 1–2 weeks; tune alert thresholds
-4. **Phase 4** — reports export, notification polish, public passports (`docs/ROADMAP.md`)
-
----
 
 ## Key URLs
 
@@ -54,6 +29,16 @@ Keep only new work as fresh PRs targeting `main`.
 |---------|-----|
 | App | https://aranyix.tech/ |
 | API | https://api.aranyix.tech/ |
-| Field ops | https://aranyix.tech/field-ops |
-| Monitoring | https://aranyix.tech/monitoring |
+| OpenAPI | https://api.aranyix.tech/openapi.json |
 | Worker health | https://api.aranyix.tech/health/workers |
+
+## Documentation map
+
+| Doc | Purpose |
+|-----|---------|
+| `IMPLEMENTED.md` | What is shipped today |
+| `TARGET_ARCHITECTURE.md` | Roadmap / not yet built |
+| `API_DOCUMENTATION.md` | Human API summary (align with OpenAPI) |
+| `API_VERSIONING.md` | Version, Sunset, Idempotency-Key policy |
+| `DATABASE_SCHEMA.md` | Schema reference (partial; see migrations for full model) |
+| `AGENTS.md` | Cursor Cloud dev environment |
