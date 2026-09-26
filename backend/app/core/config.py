@@ -106,8 +106,11 @@ class Settings(BaseSettings):
     auth_otp_email_enabled: bool = False
     # Resend transactional email (https://resend.com)
     resend_api_key: str | None = None
+    resend_webhook_secret: str | None = None
     resend_from_email: str = "no-reply@aranyix.tech"
     resend_from_name: str = "Aranyix"
+    sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = Field(default=0.1, ge=0.0, le=1.0)
     contact_inquiry_to_email: str = "kapil@axentis.tech"
     # Gmail API — legacy fallback for org invites and program-access notifications
     gmail_sender: str | None = None

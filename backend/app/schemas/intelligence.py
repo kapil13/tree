@@ -8,9 +8,23 @@ from app.schemas.project_member import FieldOpsSummaryOut
 from app.schemas.threat_watch import SiteThreatWatchOut, ThreatWatchSummaryOut
 
 
+class IntegrationStripItemOut(BaseModel):
+    key: str
+    label: str
+    mode: str
+
+
+class IntegrationStripOut(BaseModel):
+    modes: dict[str, str]
+    integrations: list[IntegrationStripItemOut] = Field(default_factory=list)
+    audit_export_ready: bool = True
+    compliance_export_ready: bool = True
+
+
 class IntegrationsHealthOut(BaseModel):
     status: str
     integrations: dict
+    strip: IntegrationStripOut | None = None
 
 
 class SatelliteFusionSiteOut(BaseModel):

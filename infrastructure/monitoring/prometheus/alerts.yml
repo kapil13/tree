@@ -1,0 +1,59 @@
+groups:
+  - name: byot_api
+    rules:
+      - alert: ApiHigh5xxRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(http_requests_total[5m])), 0.001)
+          > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: API 5xx error rate above 5%
+          description: More than 5% of API requests returned 5xx over the last 5 minutes.
+
+      - alert: RedisUnreachable
+        expr: probe_success{job="byot-redis"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Redis probe failing
+          description: Synthetic or exporter probe cannot reach Redis.
+
+      - alert: CeleryQueueDepthHigh
+        expr: celery_queue_length > 500
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Celery queue depth high
+          description: Celery queue depth has exceeded 500 tasks for 10 minutes.
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Disk space low on root volume
+          description: Less than 10% disk space remains on the root filesystem.
+
+      - alert: WebhookDeliverySuccessRateLow
+        expr: |
+          (
+            sum(increase(webhook_deliveries_total{outcome="success"}[1h]))
+            /
+            clamp_min(
+              sum(increase(webhook_deliveries_total{outcome=~"success|dead_letter|failed"}[1h])),
+              1
+            )
+          ) < 0.9
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Webhook delivery success rate below 90%
+          description: Organization webhook deliveries are failing or dead-lettering too often.

@@ -8,6 +8,7 @@ import { ImpersonationBanner } from "@/components/platform/impersonation-banner"
 import { OrgFeatureFlagsBanner } from "@/components/org-feature-flags-banner";
 import { MaintenanceBanner } from "@/components/platform/maintenance-banner";
 import { ViewerReadOnlyBanner } from "@/components/viewer-read-only-banner";
+import { GlobalIntegrationStrip } from "@/components/integrations/global-integration-strip";
 import { LocaleBootstrap } from "@/components/locale-bootstrap";
 import { ProjectContextProvider } from "@/lib/project-context";
 import { NOINDEX_METADATA } from "@/lib/seo/noindex";
@@ -29,6 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <MaintenanceBanner />
               <ViewerReadOnlyBanner />
               <OrgFeatureFlagsBanner />
+              <GlobalIntegrationStrip className="mx-4 mt-2" />
             </div>
             <Topbar />
             <main className="flex-1 bg-stone-50 dark:bg-stone-950 md:p-6 p-4">

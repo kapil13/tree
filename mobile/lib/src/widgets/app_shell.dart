@@ -11,6 +11,7 @@ import '../auth_session.dart';
 import '../session.dart';
 import '../widgets/prototype/prototype_ui.dart';
 import 'app_drawer.dart';
+import 'integration_status_banner.dart';
 import 'shell_scaffold.dart';
 
 String navDestinationLabel(AppLocalizations l10n, String labelKey) {
@@ -95,7 +96,13 @@ class AppShell extends ConsumerWidget {
     return Scaffold(
       backgroundColor: PrototypeColors.bgApp,
       drawer: AppDrawer(currentLocation: location),
-      body: child,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const IntegrationStatusBanner(),
+          Expanded(child: child),
+        ],
+      ),
       floatingActionButton: showFab ? ShellRegisterFab(location: location) : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(

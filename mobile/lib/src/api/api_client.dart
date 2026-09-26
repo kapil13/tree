@@ -1398,6 +1398,11 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
+  Future<Map<String, dynamic>> getIntegrationStrip() async {
+    final response = await _dio.get('/intelligence/integrations/strip');
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
   Future<Map<String, dynamic>> getSarStatus() async {
     final r = await _dio.get('/sar/status');
     return Map<String, dynamic>.from(r.data);

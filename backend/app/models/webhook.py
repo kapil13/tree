@@ -60,6 +60,8 @@ class WebhookDelivery(UUIDPKMixin, Base):
     response_body: Mapped[str | None] = mapped_column(Text)
     error_message: Mapped[str | None] = mapped_column(Text)
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    dead_lettered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
@@ -69,4 +71,5 @@ class WebhookDelivery(UUIDPKMixin, Base):
     __table_args__ = (
         Index("webhook_delivery_webhook_idx", "webhook_id", "created_at"),
         Index("webhook_delivery_status_idx", "status"),
+        Index("webhook_delivery_retry_idx", "status", "next_retry_at"),
     )

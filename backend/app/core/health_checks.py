@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import __version__
 from app.core.config import settings
 from app.core.production_guards import is_hardened_env
-from app.schemas.common import HealthResponse
+from app.schemas.common import HealthResponse, SyntheticHealthResponse
 
 
 async def ping_database(db: AsyncSession) -> str:
@@ -72,3 +72,35 @@ async def require_health_detail_auth(
 
 def health_http_status(health: HealthResponse) -> int:
     return status.HTTP_503_SERVICE_UNAVAILABLE if health.status != "ok" else status.HTTP_200_OK
+
+
+async def collect_synthetic_health(db: AsyncSession) -> SyntheticHealthResponse:
+    """Beyond liveness: DB, Redis, Celery, and integration export readiness."""
+    from app.services.intelligence.integration_gates import integration_gate_summary
+    from app.services.monitoring.worker_health import inspect_celery_workers
+
+    checks = {
+        "database": await ping_database(db),
+        "redis": await ping_redis(),
+    }
+    celery = inspect_celery_workers()
+    checks["celery"] = "ok" if celery.get("reachable") else "error"
+    gate = integration_gate_summary()
+    checks["audit_export_integrations"] = "ok" if gate.get("audit_export_ready") else "degraded"
+    checks["compliance_export_integrations"] = (
+        "ok" if gate.get("compliance_export_ready") else "degraded"
+    )
+    overall = "ok"
+    if checks["database"] == "error":
+        overall = "error"
+    elif any(value != "ok" for value in checks.values()):
+        overall = "degraded"
+    return SyntheticHealthResponse(status=overall, version=__version__, checks=checks)
+
+
+def synthetic_health_http_status(health: SyntheticHealthResponse) -> int:
+    if health.status == "error":
+        return status.HTTP_503_SERVICE_UNAVAILABLE
+    if health.status == "degraded":
+        return status.HTTP_200_OK
+    return status.HTTP_200_OK

@@ -2935,6 +2935,16 @@ export const intelligence = {
       )
     ).data;
   },
+  async integrationStrip() {
+    return (
+      await api.get<{
+        modes: Record<string, string>;
+        integrations: Array<{ key: string; label: string; mode: string }>;
+        audit_export_ready: boolean;
+        compliance_export_ready: boolean;
+      }>("/v1/intelligence/integrations/strip")
+    ).data;
+  },
 };
 
 export const carbon = {
