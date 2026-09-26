@@ -13,9 +13,20 @@ import {
 
 /** Distinct, product-grade infographics for marketing sections. */
 
+const INFOGRAPHIC_PROPS = {
+  preserveAspectRatio: "xMidYMid meet" as const,
+  className: "marketing-infographic",
+};
+
 export function HeroCommandVisual({ className = "" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 560 560" className={className} role="img" aria-label="Field, satellite, and audit intelligence orbiting a living tree">
+    <svg
+      viewBox="0 0 560 560"
+      className={`marketing-infographic ${className}`.trim()}
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label="Field, satellite, and audit intelligence orbiting a living tree"
+    >
       <defs>
         <linearGradient id="hcv-canopy" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#86efac" />
@@ -116,7 +127,7 @@ function CanopyTree({
 
 export function FieldMapVisual() {
   return (
-    <svg viewBox="0 0 640 360" className="h-full w-full" aria-hidden preserveAspectRatio="xMidYMid slice">
+    <svg viewBox="0 0 640 360" aria-hidden {...INFOGRAPHIC_PROPS}>
       <defs>
         <linearGradient id="fm-sky" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#e8f5ee" />
@@ -184,27 +195,27 @@ export function FieldMapVisual() {
       <circle cx="348" cy="168" r="34" fill="url(#fm-gps)" />
       <circle cx="348" cy="168" r="18" fill="none" stroke="#166534" strokeWidth="1.4" strokeDasharray="3 3" opacity="0.55" />
 
-      <g transform="translate(24 22)" filter="url(#fm-soft)">
-        <rect width="196" height="118" rx="18" fill="#052e1f" />
-        <rect x="1" y="1" width="194" height="116" rx="17" fill="none" stroke="#86efac" strokeOpacity="0.28" />
-        <text x="18" y="28" fill="#86efac" fontSize="10" fontFamily="ui-sans-serif, system-ui" fontWeight="700" letterSpacing="1.4">
+      <g transform="translate(36 20)" filter="url(#fm-soft)">
+        <rect width="188" height="112" rx="18" fill="#052e1f" />
+        <rect x="1" y="1" width="186" height="110" rx="17" fill="none" stroke="#86efac" strokeOpacity="0.28" />
+        <text x="16" y="26" fill="#86efac" fontSize="10" fontFamily="ui-sans-serif, system-ui" fontWeight="700" letterSpacing="1.4">
           CORRIDOR 12+340
         </text>
-        <text x="18" y="58" fill="#fff" fontSize="26" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
+        <text x="16" y="54" fill="#fff" fontSize="24" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
           248 trees
         </text>
-        <text x="18" y="80" fill="#bbf7d0" fontSize="11" fontFamily="ui-sans-serif, system-ui">
+        <text x="16" y="74" fill="#bbf7d0" fontSize="11" fontFamily="ui-sans-serif, system-ui">
           GPS lock · 4.2 m accuracy
         </text>
-        <rect x="18" y="90" width="118" height="16" rx="8" fill="#14532d" />
-        <circle cx="30" cy="98" r="3" fill="#4ade80" />
-        <text x="40" y="102" fill="#d9f99d" fontSize="9" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
+        <rect x="16" y="84" width="112" height="16" rx="8" fill="#14532d" />
+        <circle cx="28" cy="92" r="3" fill="#4ade80" />
+        <text x="38" y="96" fill="#d9f99d" fontSize="9" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
           offline cache ready
         </text>
       </g>
 
-      <g transform="translate(454 22)">
-        <rect width="162" height="52" rx="12" fill="rgba(255,255,255,0.78)" />
+      <g transform="translate(430 20)">
+        <rect width="154" height="52" rx="12" fill="rgba(255,255,255,0.78)" />
         <circle cx="18" cy="18" r="5" fill="#22c55e" />
         <text x="30" y="22" fill="#14532d" fontSize="10" fontFamily="ui-sans-serif, system-ui">Healthy 214</text>
         <circle cx="18" cy="36" r="5" fill="#ca8a04" />
@@ -233,7 +244,7 @@ export function SatelliteFusionVisual() {
   ];
 
   return (
-    <svg viewBox="0 0 640 360" className="h-full w-full" aria-hidden preserveAspectRatio="xMidYMid slice">
+    <svg viewBox="0 0 640 360" aria-hidden {...INFOGRAPHIC_PROPS}>
       <defs>
         <linearGradient id="sf-bg" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#082f49" />
@@ -264,20 +275,20 @@ export function SatelliteFusionVisual() {
 
       <rect x="132" y="136" width="32" height="32" rx="6" fill="none" stroke="#f8fafc" strokeWidth="2" />
 
-      <g transform="translate(332 56)">
-        <rect width="284" height="248" rx="20" fill="rgba(8, 47, 73, 0.72)" stroke="rgba(125,211,252,0.22)" />
+      <g transform="translate(312 52)">
+        <rect width="268" height="240" rx="20" fill="rgba(8, 47, 73, 0.72)" stroke="rgba(125,211,252,0.22)" />
         <text x="20" y="32" fill="#7dd3fc" fontSize="11" fontFamily="ui-sans-serif, system-ui" fontWeight="700" letterSpacing="1.2">
           SENTINEL-2 · NISAR
         </text>
         <text x="20" y="56" fill="#f8fafc" fontSize="18" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
           Canopy fusion
         </text>
-        <path d="M20 168 L20 86 L268 86 L268 168" fill="none" stroke="#38bdf8" strokeOpacity="0.18" />
+        <path d="M20 160 L20 82 L252 82 L252 160" fill="none" stroke="#38bdf8" strokeOpacity="0.18" />
         {[0, 1, 2, 3].map((i) => (
-          <line key={i} x1="20" y1={86 + i * 27} x2="268" y2={86 + i * 27} stroke="#38bdf8" strokeOpacity="0.1" />
+          <line key={i} x1="20" y1={82 + i * 26} x2="252" y2={82 + i * 26} stroke="#38bdf8" strokeOpacity="0.1" />
         ))}
         <polyline
-          points="28,150 68,136 108,140 148,112 188,118 228,96 260,102"
+          points="28,142 64,128 102,132 140,106 176,112 214,92 244,98"
           fill="none"
           stroke="url(#sf-line)"
           strokeWidth="3"
@@ -285,21 +296,21 @@ export function SatelliteFusionVisual() {
           strokeLinejoin="round"
         />
         <polyline
-          points="28,162 68,156 108,158 148,146 188,148 228,140 260,142"
+          points="28,154 64,148 102,150 140,138 176,140 214,132 244,134"
           fill="none"
           stroke="#7dd3fc"
           strokeWidth="2"
           strokeDasharray="5 5"
           strokeLinecap="round"
         />
-        <circle cx="188" cy="118" r="4" fill="#ecfccb" />
-        <text x="20" y="198" fill="#bbf7d0" fontSize="12" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
+        <circle cx="176" cy="112" r="4" fill="#ecfccb" />
+        <text x="20" y="186" fill="#bbf7d0" fontSize="12" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
           NDVI 0.72
         </text>
-        <text x="20" y="220" fill="#bae6fd" fontSize="12" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
+        <text x="20" y="208" fill="#bae6fd" fontSize="12" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
           SAR integrity 0.91
         </text>
-        <text x="264" y="220" textAnchor="end" fill="#94a3b8" fontSize="10" fontFamily="ui-sans-serif, system-ui">
+        <text x="248" y="208" textAnchor="end" fill="#94a3b8" fontSize="10" fontFamily="ui-sans-serif, system-ui">
           30-day trend
         </text>
       </g>
@@ -332,7 +343,7 @@ export function BioacousticVisual() {
     0.1, 0.25, 0.45, 0.6, 0.5, 0.3, 0.55, 0.4, 0.2, 0.35, 0.5, 0.25, 0.15, 0.4, 0.2,
   ];
   return (
-    <svg viewBox="0 0 1100 168" className="h-full w-full" aria-hidden>
+    <svg viewBox="0 0 1100 168" aria-hidden {...INFOGRAPHIC_PROPS}>
       <defs>
         <linearGradient id="bio-bg" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#14532d" />
@@ -640,7 +651,7 @@ export function ReportPaper({
 export function ProgramScene({ kind }: { kind: string }) {
   if (/byot|citizen/i.test(kind)) {
     return (
-      <svg viewBox="0 0 360 200" className="h-full w-full" aria-hidden>
+      <svg viewBox="0 0 360 200" aria-hidden {...INFOGRAPHIC_PROPS}>
         <rect width="360" height="200" fill="#dcfce7" />
         <rect x="248" y="48" width="72" height="120" rx="12" fill="#052e1f" />
         <rect x="258" y="62" width="52" height="78" rx="6" fill="#14532d" />
@@ -654,7 +665,7 @@ export function ProgramScene({ kind }: { kind: string }) {
   }
   if (/government|nhai|highway/i.test(kind)) {
     return (
-      <svg viewBox="0 0 360 200" className="h-full w-full" aria-hidden>
+      <svg viewBox="0 0 360 200" aria-hidden {...INFOGRAPHIC_PROPS}>
         <rect width="360" height="200" fill="#f59e0b" />
         <rect y="120" width="360" height="80" fill="#78716c" />
         <path d="M0 120 L360 120" stroke="#fde68a" strokeWidth="6" />
@@ -673,7 +684,7 @@ export function ProgramScene({ kind }: { kind: string }) {
   }
   if (kind.includes("Corporate") || kind.includes("Industry") || kind.includes("ESG")) {
     return (
-      <svg viewBox="0 0 360 200" className="h-full w-full" aria-hidden>
+      <svg viewBox="0 0 360 200" aria-hidden {...INFOGRAPHIC_PROPS}>
         <rect width="360" height="200" fill="#0f172a" />
         <rect x="40" y="70" width="48" height="110" fill="#334155" />
         <rect x="100" y="40" width="56" height="140" fill="#1e293b" />
@@ -687,7 +698,7 @@ export function ProgramScene({ kind }: { kind: string }) {
   }
   if (kind.includes("NGO") || kind.includes("Community")) {
     return (
-      <svg viewBox="0 0 360 200" className="h-full w-full" aria-hidden>
+      <svg viewBox="0 0 360 200" aria-hidden {...INFOGRAPHIC_PROPS}>
         <rect width="360" height="200" fill="#ecfccb" />
         <ellipse cx="180" cy="150" rx="150" ry="28" fill="#65a30d" opacity="0.35" />
         <path d="M40 150 Q180 40 320 150" fill="#16a34a" opacity="0.85" />
@@ -701,7 +712,7 @@ export function ProgramScene({ kind }: { kind: string }) {
     );
   }
   return (
-    <svg viewBox="0 0 360 200" className="h-full w-full" aria-hidden>
+    <svg viewBox="0 0 360 200" aria-hidden {...INFOGRAPHIC_PROPS}>
       <rect width="360" height="200" fill="#dcfce7" />
       <rect x="248" y="48" width="72" height="120" rx="12" fill="#052e1f" />
       <path d="M40 160 C70 90 110 120 140 80 C170 50 200 100 240 70" fill="none" stroke="#16a34a" strokeWidth="8" />

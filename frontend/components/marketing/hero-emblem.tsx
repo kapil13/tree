@@ -2,7 +2,8 @@ export function HeroEmblem({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 520 520"
-      className={className}
+      className={`marketing-infographic ${className}`.trim()}
+      preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label="Aranyix ecosystem intelligence illustration"
     >
