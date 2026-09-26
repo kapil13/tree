@@ -45,6 +45,8 @@ make seed     # demo user + trees (after backend is healthy)
 
 **Demo login** (after `make seed`): `demo@byot.earth` / `byotdemo1234!`
 
+**Phase G personas** (same password): `fieldworker@byot.earth`, `supervisor@byot.earth`, `corporate@byot.earth`, `ngo@byot.earth`, `manager@byot.earth`, `verifier@byot.earth`. See `docs/DEMO_SEED_PHASE_G.md` for the 13-scheme matrix and workflow fixtures.
+
 ### Non-obvious gotchas
 
 - **Docker 29+ on nested VMs** requires `fuse-overlayfs` storage driver and `"containerd-snapshotter": false` in `/etc/docker/daemon.json`. The setup script handles this.
