@@ -21,7 +21,14 @@ export function AranyixMark({ className = "h-8 w-8" }: { className?: string }) {
   );
 }
 
-export function AranyixLogo({ className = "h-12" }: { className?: string }) {
+export function AranyixLogo({
+  className = "h-12",
+  variant = "full",
+}: {
+  className?: string;
+  /** compact hides the tagline for header/footer chrome */
+  variant?: "full" | "compact";
+}) {
   return (
     <svg
       viewBox="0 0 360 120"
@@ -89,17 +96,19 @@ export function AranyixLogo({ className = "h-12" }: { className?: string }) {
       >
         Aranyix
       </text>
-      <text
-        x="120"
-        y="82"
-        fill="#3f6212"
-        fontSize="10.5"
-        fontWeight="600"
-        fontFamily="Inter, system-ui, sans-serif"
-        letterSpacing="3.2"
-      >
-        INTELLIGENCE FOR A THRIVING PLANET
-      </text>
+      {variant === "full" ? (
+        <text
+          x="120"
+          y="82"
+          fill="#3f6212"
+          fontSize="10.5"
+          fontWeight="600"
+          fontFamily="Inter, system-ui, sans-serif"
+          letterSpacing="3.2"
+        >
+          INTELLIGENCE FOR A THRIVING PLANET
+        </text>
+      ) : null}
     </svg>
   );
 }

@@ -217,13 +217,26 @@ html[lang="hi"] body {
   @apply sticky top-0 z-50 border-b border-white/60 bg-white/75 backdrop-blur-xl;
 }
 
+.marketing-header-logo {
+  @apply flex items-center;
+}
+
 .marketing-nav-link {
-  @apply rounded-full px-4 py-2 text-sm font-medium text-stone-600 transition hover:bg-forest-50 hover:text-forest-800;
+  @apply rounded-full px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-forest-50 hover:text-forest-800;
+}
+
+.marketing-mega-panel {
+  @apply overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-xl shadow-forest-900/10;
+}
+
+.marketing-mega-featured {
+  @apply block border-b border-stone-100 bg-forest-50/60 px-5 py-4 transition hover:bg-forest-50;
 }
 
 .marketing-hero {
   position: relative;
   overflow: hidden;
+  overflow-x: clip;
   color: #ecfdf5;
   background:
     radial-gradient(circle at 12% 18%, rgba(74, 222, 128, 0.24), transparent 38%),
@@ -248,14 +261,15 @@ html[lang="hi"] body {
 
 @media (min-width: 1024px) {
   .marketing-hero-grid {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    gap: 3rem;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: 2.5rem;
   }
 }
 
 .marketing-hero-copy {
   position: relative;
   z-index: 2;
+  min-width: 0;
 }
 
 .marketing-hero-visual {
@@ -264,12 +278,36 @@ html[lang="hi"] body {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
+  overflow: visible;
+  padding: 0.5rem 0;
+}
+
+@media (min-width: 1024px) {
+  .marketing-hero-visual {
+    justify-content: flex-end;
+    padding-right: 0.5rem;
+  }
 }
 
 .marketing-hero-emblem-inline {
-  width: min(100%, 28rem);
+  width: min(100%, 22rem);
+  max-width: 100%;
   height: auto;
+  margin-inline: auto;
   filter: drop-shadow(0 28px 70px rgba(2, 20, 14, 0.55));
+}
+
+@media (min-width: 640px) {
+  .marketing-hero-emblem-inline {
+    width: min(100%, 24rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-hero-emblem-inline {
+    width: min(100%, 26rem);
+  }
 }
 
 .marketing-pill--hero {
@@ -289,6 +327,9 @@ html[lang="hi"] body {
   gap: 0;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(2, 16, 12, 0.45);
+  max-width: 80rem;
+  margin-inline: auto;
+  width: 100%;
 }
 
 @media (min-width: 768px) {
@@ -298,8 +339,19 @@ html[lang="hi"] body {
 }
 
 .marketing-hero-ribbon-item {
-  padding: 1.1rem 1.25rem;
+  padding: 1rem 1rem;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 0;
+}
+
+.marketing-hero-ribbon-item:last-child {
+  border-right: none;
+}
+
+@media (min-width: 640px) {
+  .marketing-hero-ribbon-item {
+    padding: 1.1rem 1.25rem;
+  }
 }
 
 .marketing-hero-ribbon-item dt {
@@ -311,10 +363,19 @@ html[lang="hi"] body {
 
 .marketing-hero-ribbon-item dd {
   margin-top: 0.2rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(209, 250, 229, 0.72);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 640px) {
+  .marketing-hero-ribbon-item dd {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+  }
 }
 
 .marketing-stats-ribbon {
