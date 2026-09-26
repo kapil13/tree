@@ -11700,6 +11700,62 @@
         "title": "IntakeGateRequirement",
         "type": "object"
       },
+      "IntegrationStripItemOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "mode"
+        ],
+        "title": "IntegrationStripItemOut",
+        "type": "object"
+      },
+      "IntegrationStripOut": {
+        "properties": {
+          "audit_export_ready": {
+            "default": true,
+            "title": "Audit Export Ready",
+            "type": "boolean"
+          },
+          "compliance_export_ready": {
+            "default": true,
+            "title": "Compliance Export Ready",
+            "type": "boolean"
+          },
+          "integrations": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationStripItemOut"
+            },
+            "title": "Integrations",
+            "type": "array"
+          },
+          "modes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Modes",
+            "type": "object"
+          }
+        },
+        "required": [
+          "modes"
+        ],
+        "title": "IntegrationStripOut",
+        "type": "object"
+      },
       "IntegrationsHealthOut": {
         "properties": {
           "integrations": {
@@ -11709,6 +11765,16 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "strip": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationStripOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -16376,9 +16442,17 @@
             "title": "Jobs",
             "type": "object"
           },
+          "messaging": {
+            "title": "Messaging",
+            "type": "object"
+          },
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "webhooks": {
+            "title": "Webhooks",
+            "type": "object"
           },
           "workers": {
             "title": "Workers",
@@ -22158,6 +22232,32 @@
         "title": "SurvivalSurveyNotificationPrefs",
         "type": "object"
       },
+      "SyntheticHealthResponse": {
+        "properties": {
+          "checks": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Checks",
+            "type": "object"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "version",
+          "checks"
+        ],
+        "title": "SyntheticHealthResponse",
+        "type": "object"
+      },
       "ThreatWatchFailureOut": {
         "properties": {
           "error": {
@@ -25604,6 +25704,18 @@
             "title": "Created At",
             "type": "string"
           },
+          "dead_lettered_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dead Lettered At"
+          },
           "error_message": {
             "anyOf": [
               {
@@ -25623,6 +25735,18 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "next_retry_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Retry At"
           },
           "organization_id": {
             "format": "uuid",
@@ -35214,6 +35338,28 @@
         ]
       }
     },
+    "/api/v1/health/synthetic": {
+      "get": {
+        "description": "Synthetic uptime probe beyond liveness \u2014 DB, Redis, Celery, integration gates.",
+        "operationId": "api_health_synthetic_api_v1_health_synthetic_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyntheticHealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Api Health Synthetic",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
     "/api/v1/health/workers": {
       "get": {
         "operationId": "api_worker_health_api_v1_health_workers_get",
@@ -35650,6 +35796,33 @@
           }
         ],
         "summary": "Integrations Health",
+        "tags": [
+          "intelligence"
+        ]
+      }
+    },
+    "/api/v1/intelligence/integrations/strip": {
+      "get": {
+        "description": "Normalized live/stub/disabled modes for the global integration strip.",
+        "operationId": "integrations_strip_api_v1_intelligence_integrations_strip_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationStripOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Integrations Strip",
         "tags": [
           "intelligence"
         ]
@@ -53070,6 +53243,31 @@
         ]
       }
     },
+    "/api/v1/webhooks/resend/events": {
+      "post": {
+        "operationId": "resend_delivery_events_api_v1_webhooks_resend_events_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Resend Delivery Events Api V1 Webhooks Resend Events Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Resend Delivery Events",
+        "tags": [
+          "webhooks"
+        ]
+      }
+    },
     "/api/v1/webhooks/{webhook_id}": {
       "delete": {
         "operationId": "delete_webhook_api_v1_webhooks__webhook_id__delete",
@@ -53337,6 +53535,28 @@
           }
         },
         "summary": "Health Live",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
+    "/health/synthetic": {
+      "get": {
+        "description": "Synthetic uptime probe \u2014 DB, Redis, Celery, and integration export gates.",
+        "operationId": "health_synthetic_health_synthetic_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyntheticHealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health Synthetic",
         "tags": [
           "meta"
         ]
