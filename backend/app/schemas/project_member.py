@@ -54,6 +54,7 @@ class FieldOpsSummaryOut(BaseModel):
     by_scheme: dict[str, int] = Field(default_factory=dict)
     projects: list[dict]
     recent_violations: list[dict]
+    priority_tasks: list[dict] = Field(default_factory=list)
 
 
 class MonitoringSummaryOut(FieldOpsSummaryOut):

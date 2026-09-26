@@ -1,11 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, ClipboardList, MapPin, TreePine } from "lucide-react";
+import {
+  AlertTriangle,
+  ClipboardCheck,
+  ClipboardList,
+  ListChecks,
+  MapPin,
+  ShieldAlert,
+  TreePine,
+} from "lucide-react";
 import { violationActionHref } from "@/lib/compliance-violation-links";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { survivalDueTreesHref } from "@/lib/trees-registry-links";
 import { cn } from "@/lib/cn";
+
+export type FieldOpsTaskKind =
+  | "violation"
+  | "survival"
+  | "project"
+  | "audit"
+  | "closure"
+  | "workflow";
 
 export type FieldOpsTask = {
   id: string;
@@ -13,7 +29,7 @@ export type FieldOpsTask = {
   detail: string;
   href: string;
   tone: "critical" | "warning" | "info";
-  kind: "violation" | "survival" | "project";
+  kind: FieldOpsTaskKind;
 };
 
 type FieldOpsSummary = {
@@ -23,6 +39,7 @@ type FieldOpsSummary = {
     code: string;
     open_violations: number;
     survival_due: number;
+    audit_plots_due?: number;
   }>;
   recent_violations: Array<{
     id: string;
@@ -32,9 +49,29 @@ type FieldOpsSummary = {
     message: string;
     tree_id?: string | null;
   }>;
+  priority_tasks?: Array<{
+    id: string;
+    kind: FieldOpsTaskKind;
+    title: string;
+    detail: string;
+    href: string;
+    tone: "critical" | "warning" | "info";
+    project_id?: string;
+  }>;
 };
 
 export function buildFieldOpsTasks(summary: FieldOpsSummary): FieldOpsTask[] {
+  if (summary.priority_tasks && summary.priority_tasks.length > 0) {
+    return summary.priority_tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      detail: task.detail,
+      href: task.href,
+      tone: task.tone,
+      kind: task.kind,
+    }));
+  }
+
   const tasks: FieldOpsTask[] = [];
 
   for (const violation of summary.recent_violations.slice(0, 8)) {
@@ -43,12 +80,27 @@ export function buildFieldOpsTasks(summary: FieldOpsSummary): FieldOpsTask[] {
       title: violation.project_name,
       detail: violation.message,
       href: violationActionHref(violation.project_id, violation.tree_id),
-      tone: violation.severity === "critical" || violation.severity === "high" ? "critical" : "warning",
+      tone:
+        violation.severity === "critical" || violation.severity === "high"
+          ? "critical"
+          : "warning",
       kind: "violation",
     });
   }
 
   for (const project of summary.projects) {
+    const auditDue = project.audit_plots_due ?? 0;
+    if (auditDue > 0) {
+      tasks.push({
+        id: `audit-${project.id}`,
+        title: project.name,
+        detail: `${auditDue} audit plot visit${auditDue === 1 ? "" : "s"} due`,
+        href: "/field-ops?section=audit",
+        tone: "warning",
+        kind: "audit",
+      });
+    }
+
     if (project.survival_due > 0) {
       tasks.push({
         id: `survival-${project.id}`,
@@ -59,6 +111,7 @@ export function buildFieldOpsTasks(summary: FieldOpsSummary): FieldOpsTask[] {
         kind: "survival",
       });
     }
+
     if (project.open_violations > 0 && tasks.length < 12) {
       const alreadyListed = tasks.some(
         (task) => task.kind === "violation" && task.title === project.name,
@@ -81,6 +134,9 @@ export function buildFieldOpsTasks(summary: FieldOpsSummary): FieldOpsTask[] {
 
 function TaskIcon({ kind }: { kind: FieldOpsTask["kind"] }) {
   if (kind === "violation") return <AlertTriangle className="h-4 w-4" />;
+  if (kind === "closure") return <ShieldAlert className="h-4 w-4" />;
+  if (kind === "workflow") return <ListChecks className="h-4 w-4" />;
+  if (kind === "audit") return <ClipboardCheck className="h-4 w-4" />;
   if (kind === "survival") return <MapPin className="h-4 w-4" />;
   return <TreePine className="h-4 w-4" />;
 }
@@ -111,7 +167,7 @@ export function FieldOpsTaskQueue({ tasks }: { tasks: FieldOpsTask[] }) {
           Task queue
         </h2>
         <p className="mt-0.5 text-xs text-stone-500">
-          Actionable violations and survival checks across your projects
+          Violations, closure alerts, audit visits, and survival checks across your projects
         </p>
       </div>
       <ul className="divide-y divide-stone-100 dark:divide-stone-800">

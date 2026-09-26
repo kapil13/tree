@@ -80,6 +80,17 @@ def _step_status(signal: str | None, *, optional: bool = False) -> WorkflowStepS
     return "pending"
 
 
+def _combined_step_status(*signals: str | None) -> WorkflowStepStatus:
+    relevant = [s for s in signals if s not in (None, "na")]
+    if not relevant:
+        return "skipped"
+    if all(s == "yes" for s in relevant):
+        return "done"
+    if any(s in ("yes", "partial") for s in relevant):
+        return "partial"
+    return "pending"
+
+
 async def _project_metrics(db: AsyncSession, project: PlantingProject) -> dict[str, int]:
     from app.models.plantation_fence import PlantationFence
 
@@ -294,10 +305,235 @@ async def _build_monitoring_compliance_workflow(
     }
 
 
+async def _build_mining_compliance_workflow(
+    db: AsyncSession, project: PlantingProject
+) -> dict[str, Any]:
+    """PMCP / FMCP progressive closure workflow for mining reclamation projects."""
+    from app.services.planting_projects.closure_milestones import compute_closure_milestones
+
+    metrics = await _project_metrics(db, project)
+    signals = await build_auto_signals(db, project)
+    checklist_summaries = await list_project_checklist_summaries(db, project)
+    recommended_code = "mining_reclamation"
+    recommended = next(
+        (c for c in checklist_summaries if c["code"] == recommended_code),
+        checklist_summaries[0] if checklist_summaries else None,
+    )
+
+    closure = await compute_closure_milestones(db, project)
+    green_belt = closure.get("green_belt") or {}
+    tree_count = metrics["tree_count"]
+    open_violations = metrics["open_violations"]
+    blocking_violations = metrics["blocking_violations"]
+    work_area_count = metrics["work_area_count"]
+
+    checklist_done = False
+    checklist_partial = False
+    if recommended:
+        status = recommended.get("eligibility_status", "not_started")
+        completion = float(recommended.get("completion_pct") or 0)
+        checklist_done = status in ("eligible", "gaps_identified") and completion >= 100
+        checklist_partial = completion > 0 or status == "in_progress"
+
+    native_pct = closure.get("native_species_pct")
+    native_target = closure.get("native_species_target_pct")
+    native_metric = None
+    if native_target is not None and native_pct is not None:
+        native_metric = f"{native_pct:.0f}% native (target {native_target:.0f}%)"
+
+    green_belt_metric = None
+    if green_belt.get("applicable"):
+        green_belt_metric = (
+            f"{green_belt.get('mapped_green_belt_ha', 0):.1f} / "
+            f"{green_belt.get('required_green_belt_ha', 0):.1f} ha "
+            f"({green_belt.get('coverage_pct', 0):.0f}% of EC target)"
+        )
+
+    project_id = str(project.id)
+    satellite_href = f"/satellite?project={project_id}"
+
+    steps: list[dict[str, Any]] = [
+        {
+            "id": "mine_lease_pmcp",
+            "title": "Link mine lease and PMCP reference",
+            "description": (
+                "Record the IBM mine lease number and progressive closure plan (PMCP) "
+                "reference in project scheme metadata."
+            ),
+            "status": _combined_step_status(
+                signals.get("mine_lease_linked"),
+                signals.get("closure_plan_on_file"),
+            ),
+            "action_label": "Open project settings",
+            "action_tab": "settings",
+            "action_href": _project_tab_href(project_id, "settings"),
+            "metric": None,
+            "optional": False,
+        },
+        {
+            "id": "reclamation_blocks",
+            "title": "Map reclamation blocks",
+            "description": (
+                "Draw dump, pit wall, buffer, or green-belt polygons and document "
+                "the reclamation block type for stocking rules."
+            ),
+            "status": _combined_step_status(
+                signals.get("has_work_areas"),
+                signals.get("reclamation_block_documented"),
+            ),
+            "action_label": "Draw work areas",
+            "action_tab": "overview",
+            "action_href": _project_setup_href(project_id, 4),
+            "metric": (
+                f"{work_area_count} block{'s' if work_area_count != 1 else ''}"
+                if work_area_count
+                else None
+            ),
+            "optional": False,
+        },
+        {
+            "id": "ec_green_belt",
+            "title": "Meet EC green-belt area",
+            "description": (
+                "Map green-belt polygons to satisfy the Environmental Clearance "
+                "minimum (typically 33% of lease area)."
+            ),
+            "status": _step_status(signals.get("ec_green_belt_compliant")),
+            "action_label": "Review closure milestones",
+            "action_tab": "overview",
+            "action_href": _project_tab_href(project_id, "overview"),
+            "metric": green_belt_metric,
+            "optional": False,
+        },
+        {
+            "id": "native_stocking",
+            "title": "Register trees with native stocking",
+            "description": (
+                "Tag reclamation trees with GPS and photos; native species share "
+                "should meet the planting standard target."
+            ),
+            "status": _combined_step_status(
+                signals.get("has_trees"),
+                signals.get("native_stocking_target"),
+            ),
+            "action_label": "Register tree",
+            "action_tab": "trees",
+            "action_href": f"/trees/new?project={project_id}",
+            "metric": (
+                f"{tree_count} registered · {native_metric}"
+                if tree_count and native_metric
+                else f"{tree_count} registered"
+                if tree_count
+                else native_metric
+            ),
+            "optional": False,
+        },
+        {
+            "id": "satellite_closure_mrv",
+            "title": "Run satellite MRV on closure blocks",
+            "description": (
+                "Monthly NDVI scans on reclamation polygons support progressive "
+                "closure evidence and encroachment watch."
+            ),
+            "status": _step_status(signals.get("satellite_mrv_active"), optional=True),
+            "action_label": "Open satellite monitoring",
+            "action_tab": "overview",
+            "action_href": satellite_href,
+            "metric": {
+                "yes": "All blocks scanned within cadence",
+                "partial": "Some blocks need a fresh NDVI scan",
+                "no": "Run initial NDVI scan on reclamation blocks",
+            }.get(signals.get("satellite_mrv_active") or "no"),
+            "optional": True,
+        },
+        {
+            "id": "resolve_violations",
+            "title": "Clear blocking violations",
+            "description": (
+                "Resolve pit size, spacing, native species, or boundary issues "
+                "before IBM or state mining submissions."
+            ),
+            "status": _step_status(signals.get("no_block_violations")),
+            "action_label": "View violations",
+            "action_tab": "compliance",
+            "action_anchor": "violations",
+            "action_href": _project_compliance_href(project_id, "issues"),
+            "metric": (
+                f"{blocking_violations} blocking · {open_violations} open"
+                if open_violations
+                else "None open"
+            ),
+            "optional": False,
+        },
+        {
+            "id": "review_checklist",
+            "title": "Complete mining reclamation checklist",
+            "description": (
+                "Review auto-suggested PMCP/FMCP answers, confirm closure phase, "
+                "and save for audit export."
+            ),
+            "status": (
+                "done"
+                if checklist_done
+                else "partial"
+                if checklist_partial
+                else "pending"
+            ),
+            "action_label": "Open checklist",
+            "action_tab": "compliance",
+            "action_anchor": "checklist",
+            "action_href": _project_compliance_href(project_id, "checklist"),
+            "metric": (
+                f"{recommended['completion_pct']:.0f}% complete · "
+                f"{recommended['eligibility_status'].replace('_', ' ')}"
+                if recommended
+                else None
+            ),
+            "optional": False,
+            "recommended_checklist": recommended_code,
+        },
+    ]
+
+    if is_satellite_watch_enabled(project):
+        for step in steps:
+            if step["id"] == "satellite_closure_mrv":
+                step["optional"] = False
+                break
+
+    required_steps = [s for s in steps if not s.get("optional")]
+    done_count = sum(1 for s in required_steps if s["status"] == "done")
+    partial_count = sum(1 for s in required_steps if s["status"] == "partial")
+
+    return {
+        "project_id": project_id,
+        "segment": project.segment,
+        "compliance_mode": project.compliance_mode,
+        "mining_mode": True,
+        "recommended_checklist": recommended_code,
+        "recommended_checklist_label": SEGMENT_CHECKLIST_LABEL.get(
+            recommended_code, "Mine reclamation"
+        ),
+        "steps": steps,
+        "progress": {
+            "done": done_count,
+            "partial": partial_count,
+            "total": len(required_steps),
+            "pct": round(100 * done_count / len(required_steps), 1) if required_steps else 0,
+        },
+        "auto_signals": signals,
+        "checklist_summaries": checklist_summaries,
+        "closure_status": closure.get("status"),
+        "current_closure_phase": closure.get("current_phase"),
+    }
+
+
 async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) -> dict[str, Any]:
     """Return step-by-step compliance readiness for a planting project."""
-    if is_monitoring_scheme(getattr(project, "scheme_code", None)):
+    scheme_code = getattr(project, "scheme_code", None)
+    if is_monitoring_scheme(scheme_code):
         return await _build_monitoring_compliance_workflow(db, project)
+    if scheme_code == "mining_reclamation":
+        return await _build_mining_compliance_workflow(db, project)
 
     metrics = await _project_metrics(db, project)
     signals = await build_auto_signals(db, project)

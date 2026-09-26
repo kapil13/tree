@@ -142,6 +142,38 @@ const AUTO_KEY_ACTIONS: Record<
     label: "Register native species",
     href: (ctx) => `/trees/new?project=${ctx.projectId}`,
   },
+  mine_lease_linked: {
+    label: "Add mine lease number",
+    tab: "settings",
+  },
+  closure_plan_on_file: {
+    label: "Add PMCP reference",
+    tab: "settings",
+  },
+  reclamation_block_documented: {
+    label: "Set reclamation block type",
+    href: (ctx) => projectSetupHref(ctx.projectId, 4),
+  },
+  closure_phase_recorded: {
+    label: "Record closure phase",
+    tab: "settings",
+  },
+  native_stocking_target: {
+    label: "Register native trees",
+    href: (ctx) => `/trees/new?project=${ctx.projectId}`,
+  },
+  ec_green_belt_compliant: {
+    label: "Map green belt areas",
+    href: (ctx) => projectSetupHref(ctx.projectId, 4),
+  },
+  fmcp_documented: {
+    label: "Add FMCP reference",
+    tab: "settings",
+  },
+  satellite_mrv_active: {
+    label: "Run NDVI scan",
+    href: (ctx) => monitoringSatelliteHref(ctx),
+  },
 };
 
 const ITEM_ID_ACTIONS: Record<string, ComplianceGapAction> = {
