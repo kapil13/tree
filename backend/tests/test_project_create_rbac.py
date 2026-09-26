@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.api.v1.deps import get_current_user, require_write_professional
+from app.api.v1.deps import require_write_professional
 from app.main import app
 
 
@@ -28,8 +28,6 @@ def _user(**kwargs):
 
 @pytest.mark.asyncio
 async def test_field_worker_cannot_create_project():
-    user = _user(role="field_worker", org_role="worker")
-
     async def _write_professional():
         from fastapi import HTTPException, status
 
@@ -83,25 +81,30 @@ async def test_require_write_professional_allows_government_manager():
 
 @pytest.mark.asyncio
 async def test_require_write_professional_blocks_field_worker():
-    from app.api.v1.deps import require_write_professional
     from fastapi import HTTPException
+
+    from app.api.v1.deps import require_write_professional
 
     user = _user(role="field_worker", org_role="worker")
     request = MagicMock()
     request.state = MagicMock(impersonation_read_only=False)
     db = AsyncMock()
 
-    with patch(
-        "app.services.platform.governance.assert_writes_allowed",
-        new=AsyncMock(),
-    ), patch(
-        "app.api.v1.deps.user_can_write",
-        return_value=True,
-    ), patch(
-        "app.api.v1.deps.list_user_program_codes",
-        new=AsyncMock(return_value=[]),
+    with (
+        patch(
+            "app.services.platform.governance.assert_writes_allowed",
+            new=AsyncMock(),
+        ),
+        patch(
+            "app.api.v1.deps.user_can_write",
+            return_value=True,
+        ),
+        patch(
+            "app.api.v1.deps.list_user_program_codes",
+            new=AsyncMock(return_value=[]),
+        ),
+        pytest.raises(HTTPException) as exc,
     ):
-        with pytest.raises(HTTPException) as exc:
-            await require_write_professional(user, request, db)
+        await require_write_professional(user, request, db)
     assert exc.value.status_code == 403
     assert exc.value.detail == "professional_access_required"

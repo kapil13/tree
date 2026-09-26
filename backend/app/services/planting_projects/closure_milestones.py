@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.credit_ledger import ProjectCreditLedger
 from app.models.plantation_fence import PlantationFence
-from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
+from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.services.planting_projects.rule_engine import get_effective_rules
